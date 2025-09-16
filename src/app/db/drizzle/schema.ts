@@ -11,7 +11,7 @@ export const helpRequests = pgTable("help_requests", {
     phone: text("phone"),
     course: text("course").notNull(),
     description: text("message").notNull(),
-    status: statusEnum("status", { length: 16 }).notNull().default("open"), // open|closed|in_progress|resolved
+    status: statusEnum("status").notNull().default("open"), // open|closed|in_progress|resolved
     createdAt: timestamp("created_at").defaultNow(),
 });
 
