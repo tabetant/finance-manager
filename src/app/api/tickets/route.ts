@@ -15,7 +15,8 @@ export async function POST(req: Request) {
 };
 
 export async function GET() {
-
+    const tickets = await db.select().from('help_requests');
+    return NextResponse.json(tickets);
 };
 
 export async function PUT() {
