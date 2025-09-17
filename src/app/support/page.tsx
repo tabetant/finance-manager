@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-
+import { supabase } from "../db/client";
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 
@@ -75,6 +75,7 @@ export default function SupportPage() {
         fetchTickets();
     }, [status, router]);
 
+    const statuses = ["open", "in_progress", "resolved", "closed"];
     return (
         <div className="flex-1 bg-gray-100 p-6 min-h-screen overflow-auto">
             {status === "all" ? (

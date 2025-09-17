@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 
-import { users } from './drizzle/schema'
+import { helpRequests } from './drizzle/schema'
 
 const connectionString = process.env.DATABASE_URL
 
@@ -9,4 +9,4 @@ const connectionString = process.env.DATABASE_URL
 const supabase = postgres(connectionString!, { prepare: false })
 export const db = drizzle(supabase);
 
-const allUsers = await db.select().from(users);
+const allTickers = await db.select().from(helpRequests);
