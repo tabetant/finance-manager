@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../db/client";
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-
+import { helpRequests } from "../db/drizzle/schema";
 import {
     Popover, PopoverAnchor, PopoverClose, PopoverContent, PopoverTrigger
 } from '../ui/Popover';
@@ -34,6 +34,16 @@ export type Ticket = {
     logs: string;
 };
 
+const getStatusVariant = (status: string): BadgeProps["variant"] => {
+    switch (status) {
+        case "open": return "error";
+        case "in_progress": return "warning";
+        case "resolved": return "success";
+        case "closed": return "neutral";
+        default: return "default";
+    }
+};
+
 export default function SupportPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -51,8 +61,8 @@ export default function SupportPage() {
                 return;
             }
             const ticketsData = await response.json();
-
-            setTickets(ticketsData.tickets);
+            console.log(ticketsData.helpRequests);
+            setTickets(ticketsData.helpRequests);
         } catch (error) {
             console.error('Fetch failed:', error);
         } finally {
@@ -67,7 +77,7 @@ export default function SupportPage() {
                 setError('You must be logged in to access this page.');
                 router.push('/login');
             } else {
-                const userResponse = await supabase.auth.getUser();
+                const userResponse = await supabase().auth.getUser();
                 setEmail(userResponse.data.user?.email || '');
             }
         }
@@ -76,6 +86,71 @@ export default function SupportPage() {
     }, [status, router]);
 
     const statuses = ["open", "in_progress", "resolved", "closed"];
+
+    interface DropEvent extends React.DragEvent<HTMLDivElement> { }
+
+    interface HandleDrop {
+        (e: DropEvent, newStatus: Ticket['status']): void;
+    }
+
+    async function updateStatus(ticketId: number, newStatus: string) {
+        try {
+            fetch(`api/tickets?status=${status}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'user-email': email as string,
+                },
+                body: JSON.stringify({ id: ticketId, status: newStatus, log: `Status changed to ${newStatus} by ${email} on ${new Date()}` }),
+            }).then(async response => {
+                if (!response.ok) {
+                    fetchTickets();
+                    throw new Error(`Error updating ticket status: ${response.statusText}`);
+                }
+            });
+            ;
+        } catch (error) {
+            console.error('Failed to update ticket status:', error);
+            setError('Failed to update ticket status. Please try again later.');
+        }
+    }
+
+    async function handleDelete(id: number) {
+        try {
+            const response = await fetch(`api/tickets?status=${status}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: id }),
+            });
+            if (!response.ok) {
+                throw new Error(`Error deleting ticket: ${response.statusText}`);
+            }
+            // Optionally re-fetch tickets after deletion
+            fetchTickets();
+        } catch (error) {
+            console.error('Failed to delete ticket:', error);
+            setError('Failed to delete ticket. Please try again later.');
+        }
+        fetchTickets();
+    }
+
+    const handleDrop: HandleDrop = (e, newStatus) => {
+        console.log(tickets);
+        e.preventDefault();
+        const ticketId = parseInt(e.dataTransfer.getData("ticketId"));
+        const newTicket = tickets.find(ticket => ticket.id == ticketId);
+        if (!newTicket) {
+            return;
+        }
+        newTicket.status = newStatus;
+        setTickets(prev => [...prev.filter(ticket => ticket.id != ticketId), newTicket]);
+        console.log(ticketId);
+        console.log(newStatus);
+        updateStatus(ticketId, newStatus);
+    };
+
     return (
         <div className="flex-1 bg-gray-100 p-6 min-h-screen overflow-auto">
             {status === "all" ? (
@@ -119,8 +194,8 @@ export default function SupportPage() {
                                                     <span className="ml-1">{new Date(ticket.createdAt).toLocaleDateString()}</span>
                                                 </p>
                                                 <p>
-                                                    <span className="font-semibold text-gray-800">Tenant:</span>
-                                                    <span className="ml-1">{ticket.tenant}</span>
+                                                    <span className="font-semibold text-gray-800">Course:</span>
+                                                    <span className="ml-1">{ticket.course}</span>
                                                 </p>
                                                 <p>
                                                     <span className="font-semibold text-gray-800">Customer:</span>
