@@ -1,11 +1,11 @@
 'use client';
 import { useRouter } from "next/navigation";
 import {
-  supabase
-} from "./db/client";
+  createClient
+} from "@/utils/supabase/client";
 export default async function LandingPage() {
   const router = useRouter();
-  const { data: { session } } = await supabase().auth.getSession();
+  const { data: { session } } = await createClient().auth.getSession();
   if (session) {
     router.push('/dashboard');
   } else {
