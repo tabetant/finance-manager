@@ -95,25 +95,34 @@ export default function SupportPage() {
 
     async function updateStatus(ticketId: number, newStatus: string) {
         try {
-            fetch(`api/tickets?status=${status}`, {
+            const response = await fetch(`api/tickets?status=${status}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                     'user-email': email as string,
                 },
-                body: JSON.stringify({ id: ticketId, status: newStatus, log: `Status changed to ${newStatus} by ${email} on ${new Date()}` }),
-            }).then(async response => {
-                if (!response.ok) {
-                    fetchTickets();
-                    throw new Error(`Error updating ticket status: ${response.statusText}`);
-                }
+                body: JSON.stringify({
+                    id: ticketId,
+                    status: newStatus,
+                    log: {
+                        user: email,
+                        message: `changed status to ${newStatus}`,
+                        timestamp: new Date().toISOString(),
+                    },
+                }),
             });
-            ;
+
+            if (!response.ok) {
+                throw new Error(`Error updating ticket status: ${response.statusText}`);
+            }
+
+            await fetchTickets();
         } catch (error) {
             console.error('Failed to update ticket status:', error);
             setError('Failed to update ticket status. Please try again later.');
         }
     }
+
 
     async function handleDelete(id: number) {
         try {

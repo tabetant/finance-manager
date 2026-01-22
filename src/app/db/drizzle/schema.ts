@@ -1,18 +1,50 @@
-// src/lib/schema.ts
-import { pgTable, serial, text, integer, boolean, timestamp, varchar, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, jsonb, boolean, pgEnum } from 'drizzle-orm/pg-core';
 
-export const statusEnum = pgEnum('status', ['open', 'closed', 'in_progress', 'resolved']);
+export const userRoleEnum = pgEnum('user_role', ['student', 'mentor', 'admin']);
+export const ticketStatusEnum = pgEnum('ticket_status', ['open', 'pending', 'resolved']);
 
-export const helpRequests = pgTable("help_requests", {
-    id: serial("id").primaryKey(),
-    firstName: text("first_name").notNull(),
-    lastName: text("last_name").notNull(),
-    email: text("email").notNull(),
-    phone: text("phone"),
-    course: text("course").notNull(),
-    description: text("message").notNull(),
-    status: statusEnum("status").notNull().default("open"), // open|closed|in_progress|resolved
-    createdAt: timestamp("created_at").defaultNow(),
+export const users = pgTable('users', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    email: text('email').notNull().unique(),
+    role: userRoleEnum('role').default('student'),
+    bio: text('bio'),
+    educationLevel: text('education_level'),
+    createdAt: timestamp('created_at').defaultNow(),
 });
 
+export const tickets = pgTable('tickets', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => users.id).notNull(),
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    multimodalPayload: jsonb('multimodal_payload'), // Stores URLs/Metadata for images, videos, audio
+    status: ticketStatusEnum('status').default('open'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+});
 
+export const resources = pgTable('resources', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: text('title').notNull(),
+    type: text('type').notNull(), // 'video', 'article', 'pdf'
+    url: text('url').notNull(),
+    subject: text('subject').notNull(),
+    contentSummary: text('content_summary'),
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const conversations = pgTable('conversations', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ticketId: uuid('ticket_id').references(() => tickets.id),
+    mentorId: uuid('mentor_id').references(() => users.id),
+    studentId: uuid('student_id').references(() => users.id),
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const messages = pgTable('messages', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    conversationId: uuid('conversation_id').references(() => conversations.id).notNull(),
+    senderId: uuid('sender_id').references(() => users.id).notNull(),
+    content: text('content').notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+});
