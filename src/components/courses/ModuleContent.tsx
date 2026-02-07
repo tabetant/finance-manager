@@ -8,6 +8,9 @@ import { ArrowLeft, BookOpen, CheckCircle, ExternalLink, PlayCircle, XCircle } f
 import Link from "next/link";
 import { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { motion, useScroll, useSpring } from "framer-motion";
 
 type QuizQuestion = {
@@ -67,7 +70,10 @@ export default function ModuleContent({
 
                 <ScrollArea className="flex-1 p-8" ref={scrollRef}>
                     <div className="prose prose-blue dark:prose-invert max-w-none">
-                        <ReactMarkdown>
+                        <ReactMarkdown
+                            remarkPlugins={[remarkMath]}
+                            rehypePlugins={[rehypeKatex]}
+                        >
                             {contentMarkdown || "No content available."}
                         </ReactMarkdown>
                     </div>
