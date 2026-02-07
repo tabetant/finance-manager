@@ -4,11 +4,19 @@ import { motion } from "framer-motion";
 
 export function OmniSubmissionHub() {
     const [isRecording, setIsRecording] = useState(false);
-    const [processingType, setProcessingType] = useState<string | null>(null);
+    const [processingType, setProcessingType] = useState<"audio" | "image" | "document" | null>(null);
 
-    const handleSubmit = (type: string) => {
+    const handleSubmit = async (type: "audio" | "image" | "document") => {
         setProcessingType(type);
-        setTimeout(() => setProcessingType(null), 2000);
+
+        // TODO: Implement actual file upload and AI processing logic here
+        // This will eventually call an API route to create a ticket in the DB
+        console.log(`Processing ${type} input...`);
+
+        setTimeout(() => {
+            setProcessingType(null);
+            // toast.success("Ticket created!");
+        }, 2000);
     };
 
     return (

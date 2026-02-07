@@ -12,13 +12,19 @@ export const users = pgTable('users', {
     createdAt: timestamp('created_at').defaultNow(),
 });
 
+export const ticketPriorityEnum = pgEnum('ticket_priority', ['low', 'medium', 'high']);
+export const ticketInputTypeEnum = pgEnum('ticket_input_type', ['text', 'audio', 'image', 'document']);
+
 export const tickets = pgTable('tickets', {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id').references(() => users.id).notNull(),
     title: text('title').notNull(),
     description: text('description').notNull(),
-    multimodalPayload: jsonb('multimodal_payload'), // Stores URLs/Metadata for images, videos, audio
     status: ticketStatusEnum('status').default('open'),
+    priority: ticketPriorityEnum('priority').default('medium'),
+    inputType: ticketInputTypeEnum('input_type').default('text'),
+    contentUrl: text('content_url'),
+    aiMetadata: jsonb('ai_metadata'), // Stores depth estimation, object detection, etc.
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
 });
