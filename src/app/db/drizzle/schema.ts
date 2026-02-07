@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, uuid, jsonb, boolean, pgEnum, integer } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 
 export const userRoleEnum = pgEnum('user_role', ['student', 'mentor', 'admin']);
 export const ticketStatusEnum = pgEnum('ticket_status', ['open', 'pending', 'resolved']);
@@ -84,3 +85,71 @@ export const messages = pgTable('messages', {
     content: text('content').notNull(),
     createdAt: timestamp('created_at').defaultNow(),
 });
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+    tickets: many(tickets),
+}));
+
+export const ticketsRelations = relations(tickets, ({ one }) => ({
+    user: one(users, {
+        fields: [tickets.userId],
+        references: [users.id],
+    }),
+}));
+
+export const coursesRelations = relations(courses, ({ many }) => ({
+    modules: many(modules),
+    resources: many(resources),
+}));
+
+export const modulesRelations = relations(modules, ({ one, many }) => ({
+    course: one(courses, {
+        fields: [modules.courseId],
+        references: [courses.id],
+    }),
+    quizzes: many(quizzes),
+}));
+
+export const quizzesRelations = relations(quizzes, ({ one }) => ({
+    module: one(modules, {
+        fields: [quizzes.moduleId],
+        references: [modules.id],
+    }),
+}));
+
+export const resourcesRelations = relations(resources, ({ one }) => ({
+    course: one(courses, {
+        fields: [resources.courseId],
+        references: [courses.id],
+    }),
+}));
+
+export const conversationsRelations = relations(conversations, ({ one, many }) => ({
+    ticket: one(tickets, {
+        fields: [conversations.ticketId],
+        references: [tickets.id],
+    }),
+    mentor: one(users, {
+        fields: [conversations.mentorId],
+        references: [users.id],
+        relationName: 'mentor_conversations',
+    }),
+    student: one(users, {
+        fields: [conversations.studentId],
+        references: [users.id],
+        relationName: 'student_conversations',
+    }),
+    messages: many(messages),
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+    conversation: one(conversations, {
+        fields: [messages.conversationId],
+        references: [conversations.id],
+    }),
+    sender: one(users, {
+        fields: [messages.senderId],
+        references: [users.id],
+    }),
+}));
