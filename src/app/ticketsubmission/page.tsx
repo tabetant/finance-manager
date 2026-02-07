@@ -142,8 +142,8 @@ export default function TicketSubmissionPage() {
                             <motion.div
                                 key={step.label}
                                 className={`p-4 rounded-lg border ${index <= analysisStep && isAnalyzing
-                                        ? "border-accent bg-accent/5"
-                                        : "border-border bg-input-background"
+                                    ? "border-accent bg-accent/5"
+                                    : "border-border bg-input-background"
                                     }`}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -208,7 +208,7 @@ export default function TicketSubmissionPage() {
                                 Extracted Content:
                             </div>
                             <div className="font-mono text-sm text-foreground">
-                                "Solve for x: 2x² + 5x - 3 = 0 using the quadratic formula..."
+                                &quot;Solve for x: 2x² + 5x - 3 = 0 using the quadratic formula...&quot;
                             </div>
                         </motion.div>
                     )}

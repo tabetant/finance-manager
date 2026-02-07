@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { Mic, Camera, FileUp, Video, BookOpen, Brain, Sparkles, Waves } from "lucide-react";
+import { LearningOrbit } from "./LearningOrbit";
+import { BookOpen, Video } from "lucide-react";
 import { motion } from "framer-motion";
-import { ShimmerLoader } from "@/components/ui/ShimmerLoader";
 
 interface MultimediaCard {
     id: string;
@@ -13,9 +12,6 @@ interface MultimediaCard {
 }
 
 export function StudentView() {
-    const [isRecording, setIsRecording] = useState(false);
-    const [processingType, setProcessingType] = useState<string | null>(null);
-
     const multimodalLibrary: MultimediaCard[] = [
         {
             id: "1",
@@ -49,11 +45,6 @@ export function StudentView() {
         }
     ];
 
-    const handleSubmit = (type: string) => {
-        setProcessingType(type);
-        setTimeout(() => setProcessingType(null), 2000);
-    };
-
     return (
         <div className="min-h-screen p-6 bg-gradient-to-br from-background via-background to-secondary">
             {/* Header */}
@@ -64,140 +55,8 @@ export function StudentView() {
                 <p className="text-muted-foreground font-mono text-sm">Student Dashboard • Real-time AI Processing</p>
             </div>
 
-            {/* 4-Column Bento Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                {/* Omni-Submission Hub - Spans 2 columns */}
-                <motion.div
-                    className="lg:col-span-2 bg-card border border-border rounded-xl p-6 shadow-lg backdrop-blur-sm"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                >
-                    <div className="flex items-center gap-2 mb-4">
-                        <Brain className="w-5 h-5 text-accent" />
-                        <h2 className="text-xl font-semibold">Omni-Submission Hub</h2>
-                        <Sparkles className="w-4 h-4 text-accent ml-auto" />
-                    </div>
-
-                    <div className="space-y-4">
-                        {/* Audio Input */}
-                        <motion.button
-                            onClick={() => {
-                                setIsRecording(!isRecording);
-                                if (!isRecording) handleSubmit("audio");
-                            }}
-                            className={`w-full flex items-center gap-4 p-4 rounded-lg border-2 transition-all ${isRecording
-                                    ? "border-accent bg-accent/10"
-                                    : "border-border bg-input-background hover:border-accent/50"
-                                }`}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                        >
-                            <div className="relative">
-                                <Mic className="w-6 h-6 text-foreground" />
-                                {isRecording && (
-                                    <motion.div
-                                        className="absolute -right-1 -top-1 w-3 h-3 bg-accent rounded-full"
-                                        animate={{ scale: [1, 1.2, 1] }}
-                                        transition={{ repeat: Infinity, duration: 1 }}
-                                    />
-                                )}
-                            </div>
-                            <div className="flex-1 text-left">
-                                <div className="font-semibold">Audio-Text</div>
-                                <div className="text-xs text-muted-foreground font-mono">
-                                    {isRecording ? "Recording..." : "Click to record question"}
-                                </div>
-                            </div>
-                            {isRecording && (
-                                <Waves className="w-5 h-5 text-accent animate-pulse" />
-                            )}
-                        </motion.button>
-
-                        {/* Image/Video Input */}
-                        <motion.button
-                            onClick={() => handleSubmit("image")}
-                            className="w-full flex items-center gap-4 p-4 rounded-lg border-2 border-border bg-input-background hover:border-accent/50 transition-all"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                        >
-                            <Camera className="w-6 h-6 text-foreground" />
-                            <div className="flex-1 text-left">
-                                <div className="font-semibold">Image-to-Text/Video</div>
-                                <div className="text-xs text-muted-foreground font-mono">
-                                    Scan textbook or capture video
-                                </div>
-                            </div>
-                            <div className="px-2 py-1 bg-accent/20 text-accent text-xs rounded font-mono">
-                                Scan
-                            </div>
-                        </motion.button>
-
-                        {/* Document Upload */}
-                        <motion.button
-                            onClick={() => handleSubmit("document")}
-                            className="w-full flex items-center gap-4 p-4 rounded-lg border-2 border-border bg-input-background hover:border-accent/50 transition-all"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                        >
-                            <FileUp className="w-6 h-6 text-foreground" />
-                            <div className="flex-1 text-left">
-                                <div className="font-semibold">Document Upload</div>
-                                <div className="text-xs text-muted-foreground font-mono">
-                                    Upload PDF for analysis
-                                </div>
-                            </div>
-                            <div className="px-2 py-1 bg-primary/20 text-primary text-xs rounded font-mono">
-                                Analyze
-                            </div>
-                        </motion.button>
-                    </div>
-
-                    {/* Processing Indicator */}
-                    {processingType && (
-                        <motion.div
-                            className="mt-4 p-3 bg-accent/10 border border-accent/30 rounded-lg"
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                        >
-                            <div className="flex items-center gap-2">
-                                <motion.div
-                                    className="w-2 h-2 bg-accent rounded-full"
-                                    animate={{ scale: [1, 1.5, 1] }}
-                                    transition={{ repeat: Infinity, duration: 1 }}
-                                />
-                                <span className="text-sm font-mono">
-                                    AI processing {processingType} input...
-                                </span>
-                            </div>
-                        </motion.div>
-                    )}
-                </motion.div>
-
-                {/* Quick Stats */}
-                <motion.div
-                    className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-xl p-6 shadow-lg"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.1 }}
-                >
-                    <div className="text-sm opacity-90 mb-2 font-mono">Active Sessions</div>
-                    <div className="text-4xl font-bold mb-1">12</div>
-                    <div className="text-xs opacity-75">+3 from yesterday</div>
-                </motion.div>
-
-                {/* AI Status */}
-                <motion.div
-                    className="bg-gradient-to-br from-accent to-accent/80 text-accent-foreground rounded-xl p-6 shadow-lg"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                >
-                    <div className="text-sm opacity-90 mb-2 font-mono">AI Response Time</div>
-                    <div className="text-4xl font-bold mb-1">1.2s</div>
-                    <div className="text-xs opacity-75">Low-latency mode</div>
-                </motion.div>
-            </div>
+            {/* Bento Grid */}
+            <LearningOrbit />
 
             {/* Multimodal Library */}
             <div className="bg-card border border-border rounded-xl p-6 shadow-lg backdrop-blur-sm">
@@ -213,7 +72,7 @@ export function StudentView() {
                     {multimodalLibrary.map((item, index) => (
                         <motion.div
                             key={item.id}
-                            className="group relative bg-card border border-border rounded-lg overflow-hidden hover:border-accent/50 transition-all cursor-pointer"
+                            className="group relative bg-card border border-border rounded-lg overflow-hidden hover:border-accent/50 transition-all cursor-pointer shadow-sm hover:shadow-md"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
@@ -224,21 +83,21 @@ export function StudentView() {
                                 <img
                                     src={item.thumbnail}
                                     alt={item.title}
-                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                 />
                                 {item.duration && (
-                                    <div className="absolute bottom-2 right-2 bg-black/80 text-white px-2 py-1 rounded text-xs font-mono">
+                                    <div className="absolute bottom-2 right-2 bg-black/80 text-white px-2 py-0.5 rounded text-[10px] font-mono backdrop-blur-sm">
                                         {item.duration}
                                     </div>
                                 )}
                                 <div className="absolute top-2 left-2">
                                     {item.type === "video" ? (
-                                        <div className="bg-accent text-accent-foreground p-1.5 rounded">
-                                            <Video className="w-4 h-4" />
+                                        <div className="bg-accent text-accent-foreground p-1.5 rounded-md shadow-lg">
+                                            <Video className="w-3 h-3" />
                                         </div>
                                     ) : (
-                                        <div className="bg-primary text-primary-foreground p-1.5 rounded">
-                                            <BookOpen className="w-4 h-4" />
+                                        <div className="bg-primary text-primary-foreground p-1.5 rounded-md shadow-lg">
+                                            <BookOpen className="w-3 h-3" />
                                         </div>
                                     )}
                                 </div>
@@ -246,23 +105,20 @@ export function StudentView() {
 
                             {/* Content */}
                             <div className="p-4">
-                                <h3 className="font-semibold mb-2 line-clamp-2 text-sm">
+                                <h3 className="font-semibold mb-2 line-clamp-2 text-sm group-hover:text-accent transition-colors">
                                     {item.title}
                                 </h3>
                                 <div className="flex flex-wrap gap-1">
                                     {item.badges.map((badge, i) => (
                                         <span
                                             key={i}
-                                            className="px-2 py-0.5 bg-accent/10 text-accent text-[10px] rounded-full font-mono"
+                                            className="px-1.5 py-0.5 bg-secondary text-secondary-foreground text-[10px] rounded-md font-mono border border-border"
                                         >
                                             {badge}
                                         </span>
                                     ))}
                                 </div>
                             </div>
-
-                            {/* Hover Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-accent/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                         </motion.div>
                     ))}
                 </div>

@@ -15,7 +15,7 @@ export default function DashboardPage() {
         const checkLoggedin = async () => {
             const { data: { session } } = await createClient().auth.getSession();
             if (!session) {
-                router.push('/login');
+                router.push('/auth');
             } else {
                 setLoading(false);
                 // TODO: Fetch user role from 'users' table

@@ -1,5 +1,6 @@
 // src/questions/NumericQuestion.tsx
 import { z } from "zod";
+import { FieldError } from "react-hook-form";
 import { Question, QuestionRenderProps } from "../types/quiz";
 
 export function createNumericQuestion(
@@ -27,7 +28,7 @@ export function createNumericQuestion(
                     className="border px-2 py-1 rounded"
                 />
                 {errors[name] && (
-                    <span className="text-red-500 text-sm">{errors[name].message}</span>
+                    <span className="text-red-500 text-sm">{(errors[name] as FieldError)?.message}</span>
                 )}
             </div>
         ),

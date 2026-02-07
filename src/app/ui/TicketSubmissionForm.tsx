@@ -28,7 +28,7 @@ export default function TicketSubmissionForm() {
         const checkLoggedIn = async () => {
             const { data: { session } } = await supabase().auth.getSession();
             if (!session) {
-                router.push('/login');
+                router.push('/auth');
             } else {
                 setEmail(session.user.email as string);
                 setFirstName(session.user.user_metadata.first_name as string);
@@ -168,7 +168,6 @@ export default function TicketSubmissionForm() {
                             {...field}
                             onValueChange={field.onChange}
                             value={field.value}
-                            className="w-full"
                         >
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Select Course" />

@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --worlded-blue: #002A5C;
+  --worlded-orange: #FF9100;
 }
 
 @theme inline {

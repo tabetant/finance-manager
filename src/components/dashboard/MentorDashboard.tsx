@@ -106,8 +106,8 @@ export function MentorDashboard() {
                             <button
                                 onClick={() => setActiveFilter("all")}
                                 className={`px-2 py-1 rounded text-xs font-mono transition-all ${activeFilter === "all"
-                                        ? "bg-accent text-accent-foreground"
-                                        : "bg-secondary text-foreground hover:bg-secondary/80"
+                                    ? "bg-accent text-accent-foreground"
+                                    : "bg-secondary text-foreground hover:bg-secondary/80"
                                     }`}
                             >
                                 All
@@ -115,8 +115,8 @@ export function MentorDashboard() {
                             <button
                                 onClick={() => setActiveFilter("high")}
                                 className={`px-2 py-1 rounded text-xs font-mono transition-all ${activeFilter === "high"
-                                        ? "bg-accent text-accent-foreground"
-                                        : "bg-secondary text-foreground hover:bg-secondary/80"
+                                    ? "bg-accent text-accent-foreground"
+                                    : "bg-secondary text-foreground hover:bg-secondary/80"
                                     }`}
                             >
                                 <AlertCircle className="w-3 h-3" />
@@ -130,8 +130,8 @@ export function MentorDashboard() {
                                 key={ticket.id}
                                 onClick={() => setSelectedTicket(ticket)}
                                 className={`p-3 rounded-lg cursor-pointer transition-all ${selectedTicket?.id === ticket.id
-                                        ? "bg-accent text-accent-foreground"
-                                        : "bg-input-background hover:bg-secondary"
+                                    ? "bg-accent text-accent-foreground"
+                                    : "bg-input-background hover:bg-secondary"
                                     }`}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -184,8 +184,8 @@ export function MentorDashboard() {
 
                         <div className="bg-input-background p-4 rounded-lg mb-4">
                             <p className="text-sm mb-2">
-                                "I'm struggling with this integration by parts problem. Can you help me understand how to
-                                choose u and dv?"
+                                &quot;I&apos;m struggling with this integration by parts problem. Can you help me understand how to
+                                choose u and dv?&quot;
                             </p>
                             <div className="bg-muted p-3 rounded font-mono text-sm">
                                 ∫ x·e^x dx
@@ -310,7 +310,7 @@ export function MentorDashboard() {
                                 <Languages className="w-5 h-5" />
                                 <span className="font-semibold text-sm">Translate</span>
                             </div>
-                            <div className="text-xs opacity-90">To student's language</div>
+                            <div className="text-xs opacity-90">To student&apos;s language</div>
                         </motion.button>
 
                         {/* Interactive Quiz */}
