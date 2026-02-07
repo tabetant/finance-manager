@@ -5,11 +5,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 // Mock Data (Replace with DB fetch later)
+// Mock Data (Replace with DB fetch later)
 const COURSES = {
     "calculus": {
         title: "Calculus",
         description: "Explore the mathematics of change and motion.",
-        icon: Calculator,
+        icon: Sigma,
         modules: [
             { id: "limits", title: "Limits and Continuity", order: 1, type: "reading" },
             { id: "derivatives", title: "Derivatives", order: 2, type: "video" },
@@ -20,7 +21,7 @@ const COURSES = {
     "linear-algebra": {
         title: "Linear Algebra",
         description: "Understand vector spaces and linear mappings.",
-        icon: Activity, // Placeholder, need to import Activity or similar
+        icon: Grid3X3,
         modules: [
             { id: "vectors", title: "Vectors and Spaces", order: 1, type: "reading" },
             { id: "gaussian", title: "Gaussian Elimination", order: 2, type: "video" },
@@ -30,7 +31,7 @@ const COURSES = {
     }
 } as const;
 
-import { Activity } from "lucide-react";
+import { Sigma, Grid3X3 } from "lucide-react";
 
 export default async function CoursePage({ params }: { params: Promise<{ courseId: string }> }) {
     const { courseId } = await params;

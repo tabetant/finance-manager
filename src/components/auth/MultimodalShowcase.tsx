@@ -7,7 +7,7 @@ import { Mic, FileText, Video, Image as ImageIcon, Sparkles } from "lucide-react
 /**
  * MultimodalShowcase Component
  * Displayed on the left side of the Auth Page.
- * Features a Bento Grid layout with rotating "Heartstrings" quotes
+ * Features a Bento Grid layout with rotating WorldEd quotes
  * and icons representing the multimodal nature of the platform.
  */
 export default function MultimodalShowcase() {
