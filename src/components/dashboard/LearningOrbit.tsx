@@ -30,7 +30,11 @@ export function LearningOrbit() {
             </motion.div>
 
             {/* Course Cards - Added for Navigation */}
-            <div className="bg-card border border-border rounded-xl p-6 shadow-lg backdrop-blur-sm flex flex-col justify-center items-center gap-2 hover:border-primary/50 transition-colors cursor-pointer group">
+            <motion.div
+                className="bg-card border border-border rounded-xl p-6 shadow-lg backdrop-blur-sm flex flex-col justify-center items-center gap-2 hover:border-primary/50 transition-colors cursor-pointer group"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+            >
                 <Link href="/courses/calculus" className="flex flex-col items-center text-center w-full h-full">
                     <div className="p-3 bg-blue-500/10 rounded-full mb-2 group-hover:scale-110 transition-transform">
                         <Activity className="w-6 h-6 text-blue-500" />
@@ -38,9 +42,13 @@ export function LearningOrbit() {
                     <span className="font-semibold">Calculus</span>
                     <span className="text-xs text-muted-foreground">4 Modules</span>
                 </Link>
-            </div>
+            </motion.div>
 
-            <div className="bg-card border border-border rounded-xl p-6 shadow-lg backdrop-blur-sm flex flex-col justify-center items-center gap-2 hover:border-orange-500/50 transition-colors cursor-pointer group">
+            <motion.div
+                className="bg-card border border-border rounded-xl p-6 shadow-lg backdrop-blur-sm flex flex-col justify-center items-center gap-2 hover:border-orange-500/50 transition-colors cursor-pointer group"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+            >
                 <Link href="/courses/linear-algebra" className="flex flex-col items-center text-center w-full h-full">
                     <div className="p-3 bg-orange-500/10 rounded-full mb-2 group-hover:scale-110 transition-transform">
                         <Zap className="w-6 h-6 text-orange-500" />
@@ -48,7 +56,7 @@ export function LearningOrbit() {
                     <span className="font-semibold">Linear Algebra</span>
                     <span className="text-xs text-muted-foreground">4 Modules</span>
                 </Link>
-            </div>
+            </motion.div>
         </div>
     );
 }

@@ -11,7 +11,7 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import { motion, useScroll, useSpring } from "framer-motion";
+import { motion, useScroll, useSpring, AnimatePresence } from "framer-motion";
 
 type QuizQuestion = {
     question: string;
@@ -68,7 +68,7 @@ export default function ModuleContent({
                     </div>
                 </div>
 
-                <ScrollArea className="flex-1 p-8" ref={scrollRef}>
+                <ScrollArea className="flex-1 p-8 h-[calc(100vh-180px)]" ref={scrollRef}>
                     <div className="prose prose-blue dark:prose-invert max-w-none">
                         <ReactMarkdown
                             remarkPlugins={[remarkMath]}
@@ -96,7 +96,7 @@ export default function ModuleContent({
             </div>
 
             {/* Sidebar / Resources */}
-            <div className="w-full lg:w-80 bg-muted/30 p-4 border-l overflow-y-auto">
+            <div className="w-full lg:w-80 bg-muted/30 p-4 border-l overflow-y-auto h-[calc(100vh-4rem)]">
                 <h3 className="font-semibold mb-4 flex items-center gap-2 text-[var(--worlded-blue)]">
                     <BookOpen className="w-4 h-4" /> Recommended Resources
                 </h3>
@@ -183,7 +183,11 @@ function QuizInterface({ quizzes }: { quizzes: QuizQuestion[] }) {
 
     if (isComplete) {
         return (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center animate-in fade-in zoom-in duration-300">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-green-50 border border-green-200 rounded-xl p-8 text-center"
+            >
                 <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-green-800 mb-2">Quiz Complete!</h3>
                 <p className="text-green-700 mb-4">You scored {score} out of {quizzes.length}</p>
@@ -197,51 +201,65 @@ function QuizInterface({ quizzes }: { quizzes: QuizQuestion[] }) {
                         </Button>
                     </Link>
                 </div>
-            </div>
+            </motion.div>
         );
     }
 
     return (
-        <div className="bg-card border rounded-xl p-6 shadow-sm">
+        <div className="bg-card border rounded-xl p-6 shadow-sm overflow-hidden">
             <div className="flex justify-between items-center mb-6">
                 <span className="text-sm font-medium text-muted-foreground">Question {currentQuestion + 1} of {quizzes.length}</span>
                 <span className="text-sm font-medium text-[var(--worlded-blue)]">Score: {score}</span>
             </div>
 
-            <h3 className="text-lg font-semibold mb-6">{question.question}</h3>
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={currentQuestion}
+                    initial={{ x: 20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: -20, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                >
+                    <h3 className="text-lg font-semibold mb-6">{question.question}</h3>
 
-            <div className="space-y-3 mb-6">
-                {question.options.map((option, idx) => {
-                    const isSelected = selectedOption === option;
-                    const isCorrect = option === question.correctAnswer;
+                    <div className="space-y-3 mb-6">
+                        {question.options.map((option, idx) => {
+                            const isSelected = selectedOption === option;
+                            const isCorrect = option === question.correctAnswer;
 
-                    let btnClass = "w-full justify-start h-auto py-4 px-6 text-left hover:bg-muted transition-colors";
+                            let btnClass = "w-full justify-start h-auto py-4 px-6 text-left hover:bg-muted transition-colors border";
+                            let animate = {};
 
-                    if (isSubmitted) {
-                        if (option === question.correctAnswer) {
-                            btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-green-100 border-green-500 text-green-800";
-                        } else if (isSelected) {
-                            btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-red-100 border-red-500 text-red-800";
-                        }
-                    } else if (isSelected) {
-                        btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-[var(--worlded-blue)] text-white hover:bg-[var(--worlded-blue)]/90";
-                    }
+                            if (isSubmitted) {
+                                if (option === question.correctAnswer) {
+                                    btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-green-100 border-green-500 text-green-800";
+                                    animate = { scale: [1, 1.02, 1] }; // Pulse
+                                } else if (isSelected) {
+                                    btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-red-100 border-red-500 text-red-800";
+                                    animate = { x: [-5, 5, -5, 5, 0] }; // Shake
+                                }
+                            } else if (isSelected) {
+                                btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-[var(--worlded-blue)] text-white hover:bg-[var(--worlded-blue)]/90";
+                            }
 
-                    return (
-                        <Button
-                            key={idx}
-                            variant="outline"
-                            className={btnClass}
-                            onClick={() => !isSubmitted && setSelectedOption(option)}
-                            disabled={isSubmitted}
-                        >
-                            {option}
-                            {isSubmitted && option === question.correctAnswer && <CheckCircle className="ml-auto w-5 h-5 text-green-600" />}
-                            {isSubmitted && isSelected && option !== question.correctAnswer && <XCircle className="ml-auto w-5 h-5 text-red-600" />}
-                        </Button>
-                    );
-                })}
-            </div>
+                            return (
+                                <motion.button
+                                    key={idx}
+                                    className={`relative flex items-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${btnClass}`}
+                                    onClick={() => !isSubmitted && setSelectedOption(option)}
+                                    disabled={isSubmitted}
+                                    animate={animate}
+                                    transition={{ duration: 0.4 }}
+                                >
+                                    {option}
+                                    {isSubmitted && option === question.correctAnswer && <CheckCircle className="ml-auto w-5 h-5 text-green-600" />}
+                                    {isSubmitted && isSelected && option !== question.correctAnswer && <XCircle className="ml-auto w-5 h-5 text-red-600" />}
+                                </motion.button>
+                            );
+                        })}
+                    </div>
+                </motion.div>
+            </AnimatePresence>
 
             <div className="flex justify-end">
                 {!isSubmitted ? (
