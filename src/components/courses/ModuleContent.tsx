@@ -1,77 +1,36 @@
-```tsx
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, BookOpen, CheckCircle, ExternalLink, PlayCircle, XCircle } from "lucide-react";
+import { ArrowLeft, BookOpen, CheckCircle, ExternalLink, PlayCircle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 
-// Mock Data matching the Seed Script for immediate UI validation
-const MODULE_CONTENT = {
-    "calculus": {
-        "limits": {
-            id: "limits",
-            title: "Limits and Continuity",
-            content: `# Limits and Continuity\n\n ** Limits ** are the foundational building block of calculus... (See seed for full content)`,
-            youtube: "https://www.youtube.com/embed/kfF40MiS7zA",
-            textbook: "https://openstax.org/books/calculus-volume-1/pages/2-2-the-limit-of-a-function",
-            quizzes: [
-                { id: "q1", question: "What condition is NOT required for a function to be continuous at x=c?", options: ["f(c) is defined", "Limit exists as x approaches c", "The derivative exists at c", "The limit equals f(c)"], correct: "The derivative exists at c" },
-                { id: "q2", question: "If the limit from the left does not equal the limit from the right, what exists at that point?", options: ["A jump discontinuity", "A hole", "A vertical asymptote", "Continuous point"], correct: "A jump discontinuity" },
-                { id: "q3", question: "Can a limit exist at a point where the function is undefined?", options: ["Yes", "No"], correct: "Yes" }
-            ]
-        },
-        "derivatives": {
-            id: "derivatives",
-            title: "Derivatives",
-            content: `# Differentiation Rules\n\nFinding derivatives using the limit definition is tedious...`,
-            youtube: "https://www.youtube.com/embed/9vKqVkMQHKk",
-            textbook: "https://openstax.org/books/calculus-volume-1/pages/3-1-defining-the-derivative",
-            quizzes: [
-                { id: "q1", question: "What is the derivative of x^5?", options: ["5x^4", "x^4", "5x^5", "4x^5"], correct: "5x^4" },
-                { id: "q2", question: "Which rule is used for f(x) = u(x) * v(x)?", options: ["Chain Rule", "Product Rule", "Quotient Rule", "Power Rule"], correct: "Product Rule" },
-                { id: "q3", question: "What is the derivative of a constant?", options: ["7", "1", "0", "Undefined"], correct: "0" }
-            ]
-        }
-    },
-    // Mocking Linear Algebra similarly for UI dev purposes
-    "linear-algebra": {
-        "vectors": {
-            id: "vectors",
-            title: "Vectors and Spaces",
-            content: `# Introduction to Vectors\n\nIn linear algebra, a ** vector ** is an object...`,
-            youtube: "",
-            textbook: "https://openstax.org/books/calculus-volume-3/pages/2-1-vectors-in-the-plane",
-            quizzes: [
-                { id: "q1", question: "A vector is defined by which two properties?", options: ["Mass and Velocity", "Magnitude and Direction", "Length and Width"], correct: "Magnitude and Direction" },
-                { id: "q2", question: "In R2, how many components does a vector have?", options: ["1", "2", "3", "Infinite"], correct: "2" },
-                { id: "q3", question: "Vectors are typically represented as:", options: ["Circles", "Arrows", "Points"], correct: "Arrows" }
-            ]
-        }
-    }
-} as const;
+type QuizQuestion = {
+    question: string;
+    options: string[];
+    correctAnswer: string;
+};
 
-// This is the new client component that will render the module content and quiz
-// It receives data as props from the server component
-function ModuleContent({
-    courseId,
-    moduleTitle,
-    contentMarkdown,
-    youtubeUrl,
-    textbookUrl,
-    quizzes
-}: {
+interface ModuleContentProps {
     courseId: string;
     moduleTitle: string;
     contentMarkdown: string;
     youtubeUrl?: string | null;
-    textbookUrl?: string | null;
-    quizzes: { question: string; options: string[]; correctAnswer: string }[];
-}) {
+    quizzes: QuizQuestion[];
+    videoUrl?: string | null; // Keep for backward compatibility/alias
+}
+
+export default function ModuleContent({
+    courseId,
+    moduleTitle,
+    contentMarkdown,
+    youtubeUrl,
+    quizzes
+}: ModuleContentProps) {
     const [showQuiz, setShowQuiz] = useState(false);
 
     return (
@@ -79,7 +38,7 @@ function ModuleContent({
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col h-full overflow-hidden border-r bg-background">
                 <div className="p-4 border-b flex items-center gap-4 bg-[var(--worlded-blue)]/5">
-                    <Link href={`/ courses / ${ courseId } `}>
+                    <Link href={`/courses/${courseId}`}>
                         <Button variant="ghost" size="icon" className="hover:bg-[var(--worlded-blue)]/10 text-[var(--worlded-blue)]">
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
@@ -93,7 +52,7 @@ function ModuleContent({
                 <ScrollArea className="flex-1 p-8">
                     <div className="prose prose-blue dark:prose-invert max-w-none">
                         <ReactMarkdown>
-                            {contentMarkdown}
+                            {contentMarkdown || "No content available."}
                         </ReactMarkdown>
                     </div>
 
@@ -140,40 +99,42 @@ function ModuleContent({
 
                     <Separator />
 
-                    {/* Textbook Link */}
-                    {textbookUrl && (
-                        <div className="space-y-2">
-                            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                Reading Material
-                            </label>
-                            <Link href={textbookUrl} target="_blank" rel="noopener noreferrer">
-                                <Card className="hover:bg-accent transition-colors border-l-4 border-l-[var(--worlded-blue)]">
-                                    <CardContent className="p-3 flex items-start gap-3">
-                                        <div className="p-2 bg-blue-100 rounded-md">
-                                            <BookOpen className="w-4 h-4 text-[var(--worlded-blue)]" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium">OpenStax Calculus</p>
-                                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                                External Link <ExternalLink className="w-3 h-3" />
-                                            </p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </Link>
-                        </div>
-                    )}
+                    {/* Textbook Link Placeholder - In a real app, this would also come from DB */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Reading Material
+                        </label>
+                        <Link href="#" target="_blank" rel="noopener noreferrer">
+                            <Card className="hover:bg-accent transition-colors border-l-4 border-l-[var(--worlded-blue)]">
+                                <CardContent className="p-3 flex items-start gap-3">
+                                    <div className="p-2 bg-blue-100 rounded-md">
+                                        <BookOpen className="w-4 h-4 text-[var(--worlded-blue)]" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium">Textbook Resource</p>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                            External Link <ExternalLink className="w-3 h-3" />
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
 
-function QuizInterface({ quizzes }: { quizzes: { question: string; options: string[]; correctAnswer: string }[] }) {
+function QuizInterface({ quizzes }: { quizzes: QuizQuestion[] }) {
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [score, setScore] = useState(0);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [isComplete, setIsComplete] = useState(false);
+
+    if (!quizzes || quizzes.length === 0) {
+        return <div className="text-muted-foreground">No quiz questions available for this module.</div>;
+    }
 
     const handleAnswer = (option: string) => {
         setSelectedOption(option);
@@ -244,4 +205,3 @@ function QuizInterface({ quizzes }: { quizzes: { question: string; options: stri
         </div>
     );
 }
-```
