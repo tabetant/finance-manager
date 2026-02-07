@@ -32,8 +32,8 @@ const COURSES = {
 
 import { Activity } from "lucide-react";
 
-export default function CoursePage({ params }: { params: { courseId: string } }) {
-    const courseId = params.courseId;
+export default async function CoursePage({ params }: { params: Promise<{ courseId: string }> }) {
+    const { courseId } = await params;
     const course = COURSES[courseId as keyof typeof COURSES];
 
     if (!course) {

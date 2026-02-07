@@ -55,8 +55,8 @@ const MODULE_CONTENT = {
     }
 } as const;
 
-export default function ModulePage({ params }: { params: { courseId: string; moduleId: string } }) {
-    const { courseId, moduleId } = params;
+export default async function ModulePage({ params }: { params: Promise<{ courseId: string; moduleId: string }> }) {
+    const { courseId, moduleId } = await params;
 
     // In a real app, use `await db.select()...` here
     const course = MODULE_CONTENT[courseId as keyof typeof MODULE_CONTENT];
