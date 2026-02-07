@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, jsonb, boolean, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, jsonb, boolean, pgEnum, integer } from 'drizzle-orm/pg-core';
 
 export const userRoleEnum = pgEnum('user_role', ['student', 'mentor', 'admin']);
 export const ticketStatusEnum = pgEnum('ticket_status', ['open', 'pending', 'resolved']);
@@ -29,8 +29,38 @@ export const tickets = pgTable('tickets', {
     updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+// ... existing users/tickets tables ...
+
+export const courses = pgTable('courses', {
+    id: text('id').primaryKey(), // slug like 'calculus', 'linear-algebra'
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    iconName: text('icon_name').notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const modules = pgTable('modules', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    courseId: text('course_id').references(() => courses.id).notNull(),
+    title: text('title').notNull(),
+    orderIndex: integer('order_index').notNull(),
+    contentMarkdown: text('content_markdown'),
+    youtubeUrl: text('youtube_url'),
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const quizzes = pgTable('quizzes', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    moduleId: uuid('module_id').references(() => modules.id).notNull(),
+    question: text('question').notNull(),
+    options: jsonb('options').notNull(), // Array of strings
+    correctAnswer: text('correct_answer').notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
 export const resources = pgTable('resources', {
     id: uuid('id').primaryKey().defaultRandom(),
+    courseId: text('course_id').references(() => courses.id), // Optional link to a specific course
     title: text('title').notNull(),
     type: text('type').notNull(), // 'video', 'article', 'pdf'
     url: text('url').notNull(),

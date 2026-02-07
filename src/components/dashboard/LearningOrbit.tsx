@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { OmniSubmissionHub } from "./OmniSubmissionHub";
 import { motion } from "framer-motion";
 import { Activity, Zap } from "lucide-react";
@@ -28,29 +29,26 @@ export function LearningOrbit() {
                 </div>
             </motion.div>
 
-            {/* AI Status - Spans 1 column */}
-            <motion.div
-                className="bg-card border border-border rounded-xl p-6 shadow-lg backdrop-blur-sm relative overflow-hidden group"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-            >
-                <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-accent/10 rounded-full blur-2xl -z-10 group-hover:bg-accent/20 transition-colors duration-500" />
-                <div className="flex items-center gap-2 mb-4">
-                    <div className="p-2 bg-accent/10 rounded-lg">
-                        <Zap className="w-5 h-5 text-accent" />
+            {/* Course Cards - Added for Navigation */}
+            <div className="bg-card border border-border rounded-xl p-6 shadow-lg backdrop-blur-sm flex flex-col justify-center items-center gap-2 hover:border-primary/50 transition-colors cursor-pointer group">
+                <Link href="/courses/calculus" className="flex flex-col items-center text-center w-full h-full">
+                    <div className="p-3 bg-blue-500/10 rounded-full mb-2 group-hover:scale-110 transition-transform">
+                        <Activity className="w-6 h-6 text-blue-500" />
                     </div>
-                    <span className="text-sm font-medium text-muted-foreground">AI Latency</span>
-                </div>
-                <div className="text-4xl font-bold mb-1 tracking-tight">1.2s</div>
-                <div className="flex items-center gap-2 mt-2">
-                    <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
-                    <span className="text-xs text-muted-foreground font-mono">Operational</span>
-                </div>
-            </motion.div>
+                    <span className="font-semibold">Calculus</span>
+                    <span className="text-xs text-muted-foreground">4 Modules</span>
+                </Link>
+            </div>
+
+            <div className="bg-card border border-border rounded-xl p-6 shadow-lg backdrop-blur-sm flex flex-col justify-center items-center gap-2 hover:border-orange-500/50 transition-colors cursor-pointer group">
+                <Link href="/courses/linear-algebra" className="flex flex-col items-center text-center w-full h-full">
+                    <div className="p-3 bg-orange-500/10 rounded-full mb-2 group-hover:scale-110 transition-transform">
+                        <Zap className="w-6 h-6 text-orange-500" />
+                    </div>
+                    <span className="font-semibold">Linear Algebra</span>
+                    <span className="text-xs text-muted-foreground">4 Modules</span>
+                </Link>
+            </div>
         </div>
     );
 }
