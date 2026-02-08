@@ -86,13 +86,17 @@ export function EddiChat() {
             // Handle Action Agent payloads
             if (data.action) {
                 if (data.action.action === 'navigate') {
-                    // Show a toast or small indicator? For now, just navigate.
                     const path = data.action.path;
-                    // Add assistant message first so user sees the "Navigating..." text
+
+                    // Extract a readable name from path if possible, or use generic
+                    const destination = path.split('/').pop()?.replace(/-/g, ' ') || "destination";
+                    const formattedDestination = destination.charAt(0).toUpperCase() + destination.slice(1);
+
+                    // Add assistant message with specific feedback
                     const assistantMessage: Message = {
                         id: (Date.now() + 1).toString(),
                         role: 'assistant',
-                        content: data.text || "Navigating...",
+                        content: data.text || `Opening ${formattedDestination}...`,
                     };
                     setMessages(prev => [...prev, assistantMessage]);
 
@@ -100,12 +104,18 @@ export function EddiChat() {
                     setTimeout(() => {
                         router.push(path);
                     }, 800);
-                    return; // Stop here
+                    return; // Stop here and don't add another message
                 }
 
                 if (data.action.action === 'draft_ticket') {
-                    // TODO: Implement ticket confirmation UI
-                    // For now, just append the text which asks for confirmation
+                    // Placeholder for ticket confirmation
+                    const assistantMessage: Message = {
+                        id: (Date.now() + 1).toString(),
+                        role: 'assistant',
+                        content: data.text || "I've drafted a ticket for you (Draft UI coming soon).",
+                    };
+                    setMessages(prev => [...prev, assistantMessage]);
+                    return;
                 }
             }
 
