@@ -50,7 +50,7 @@ You can suggest opening modules or creating mentor tickets.
 `;
 
     const result = streamText({
-        model: google('gemini-1.5-pro'), // or 'gemini-1.5-flash' for speed
+        model: google('gemini-1.5-pro-latest'), // or 'gemini-1.5-flash' for speed
         system: systemInstructions,
         messages,
         tools: {
