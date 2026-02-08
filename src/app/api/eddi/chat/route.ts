@@ -1,5 +1,6 @@
 import { google } from '@ai-sdk/google';
-import { streamText, tool, zodSchema } from 'ai'; // 'zodSchema' is unused but kept for now as per previous context
+import { generateText, tool, zodSchema } from 'ai';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/db';
 import { modules, courses } from '@/app/db/drizzle/schema';
@@ -49,121 +50,142 @@ You can suggest opening modules or creating mentor tickets.
 - Encouraging and helpful.
 `;
 
-    const result = streamText({
-        model: google('gemini-2.0-flash'), // Updated to available 2.0 flash model
-        system: systemInstructions,
-        messages,
-        tools: {
-            mapsToModule: tool({
-                description: 'Redirect the user to a specific course module page',
-                // Use inputSchema as per provider-utils definition
-                // We can use the Zod schema directly as it satisfies FlexibleSchema
-                inputSchema: MapsToModuleSchema,
-                execute: async (args) => {
-                    const { courseSlug, moduleSlug } = args;
+    try {
+        const result = await generateText({
+            model: google('gemini-2.0-flash'), // Updated to available 2.0 flash model
+            system: systemInstructions,
+            messages,
+            tools: {
+                mapsToModule: tool({
+                    description: 'Redirect the user to a specific course module page',
+                    // Use inputSchema as per provider-utils definition
+                    // We can use the Zod schema directly as it satisfies FlexibleSchema
+                    inputSchema: MapsToModuleSchema,
+                    execute: async (args) => {
+                        const { courseSlug, moduleSlug } = args;
 
-                    try {
-                        // Validate Course
-                        const course = await db.query.courses.findFirst({
-                            where: eq(courses.id, courseSlug)
-                        });
-
-                        if (!course) {
-                            return {
-                                action: 'error',
-                                message: `I couldn't find a course named "${courseSlug}". Available courses: Calculus, Linear Algebra.`
-                            };
-                        }
-
-                        // Validate Module (check ID or partial title match)
-                        // Since moduleSlug might be a guess, we search.
-                        const module = await db.query.modules.findFirst({
-                            where: and(
-                                eq(modules.courseId, courseSlug),
-                                or(
-                                    eq(modules.id, moduleSlug), // strict ID check
-                                    ilike(modules.title, `%${moduleSlug}%`) // loose title check
-                                )
-                            )
-                        });
-
-                        if (!module) {
-                            // Find available modules for suggestion
-                            const courseModules = await db.query.modules.findMany({
-                                where: eq(modules.courseId, courseSlug),
-                                limit: 5,
-                                columns: { title: true }
+                        try {
+                            // Validate Course
+                            const course = await db.query.courses.findFirst({
+                                where: eq(courses.id, courseSlug)
                             });
-                            const suggestions = courseModules.map(m => m.title).join(', ');
+
+                            if (!course) {
+                                return {
+                                    action: 'error',
+                                    message: `I couldn't find a course named "${courseSlug}". Available courses: Calculus, Linear Algebra.`
+                                };
+                            }
+
+                            // Validate Module (check ID or partial title match)
+                            // Since moduleSlug might be a guess, we search.
+                            const module = await db.query.modules.findFirst({
+                                where: and(
+                                    eq(modules.courseId, courseSlug),
+                                    or(
+                                        eq(modules.id, moduleSlug), // strict ID check
+                                        ilike(modules.title, `%${moduleSlug}%`) // loose title check
+                                    )
+                                )
+                            });
+
+                            if (!module) {
+                                // Find available modules for suggestion
+                                const courseModules = await db.query.modules.findMany({
+                                    where: eq(modules.courseId, courseSlug),
+                                    limit: 5,
+                                    columns: { title: true }
+                                });
+                                const suggestions = courseModules.map(m => m.title).join(', ');
+                                return {
+                                    action: 'error',
+                                    message: `I couldn't find a module matching "${moduleSlug}" in ${course.title}. Try searching for: ${suggestions || 'Introduction'}`
+                                };
+                            }
+
+                            return {
+                                action: 'redirect',
+                                url: `/courses/${courseSlug}/${module.id}`,
+                                message: `Navigating to ${course.title} - ${module.title}...`
+                            };
+                        } catch (error) {
+                            console.error("Tool execution error:", error);
                             return {
                                 action: 'error',
-                                message: `I couldn't find a module matching "${moduleSlug}" in ${course.title}. Try searching for: ${suggestions || 'Introduction'}`
-                            };
+                                message: "I encountered an error while trying to find that module."
+                            }
                         }
-
+                    },
+                }),
+                createSupportTicket: tool({
+                    description: 'Draft a support ticket for the user. ALWAYS ask for confirmation before submitting.',
+                    inputSchema: CreateTicketSchema,
+                    execute: async (args) => {
+                        const { title, description, priority } = args;
+                        // This tool doesn't actually write to DB directly in this flow.
+                        // It returns a "draft" state that the UI will render as a confirmation card.
                         return {
-                            action: 'redirect',
-                            url: `/courses/${courseSlug}/${module.id}`,
-                            message: `Navigating to ${course.title} - ${module.title}...`
+                            action: 'draft_ticket',
+                            ticket: { title, description, priority }
                         };
-                    } catch (error) {
-                        console.error("Tool execution error:", error);
-                        return {
-                            action: 'error',
-                            message: "I encountered an error while trying to find that module."
-                        }
-                    }
-                },
-            }),
-            createSupportTicket: tool({
-                description: 'Draft a support ticket for the user. ALWAYS ask for confirmation before submitting.',
-                inputSchema: CreateTicketSchema,
-                execute: async (args) => {
-                    const { title, description, priority } = args;
-                    // This tool doesn't actually write to DB directly in this flow.
-                    // It returns a "draft" state that the UI will render as a confirmation card.
-                    return {
-                        action: 'draft_ticket',
-                        ticket: { title, description, priority }
-                    };
-                },
-            }),
-            searchCourseContent: tool({
-                description: 'Search the database for course content, modules, or quizzes to answer a question.',
-                inputSchema: SearchSchema,
-                execute: async (args) => {
-                    const { query } = args;
-                    try {
-                        // Perform a basic text search on modules (title and content)
-                        const results = await db.select({
-                            title: modules.title,
-                            content: modules.contentMarkdown,
-                            courseId: modules.courseId
-                        })
-                            .from(modules)
-                            .where(
-                                or(
-                                    ilike(modules.title, `%${query}%`),
-                                    ilike(modules.contentMarkdown, `%${query}%`)
+                    },
+                }),
+                searchCourseContent: tool({
+                    description: 'Search the database for course content, modules, or quizzes to answer a question.',
+                    inputSchema: SearchSchema,
+                    execute: async (args) => {
+                        const { query } = args;
+                        try {
+                            // Perform a basic text search on modules (title and content)
+                            const results = await db.select({
+                                title: modules.title,
+                                content: modules.contentMarkdown,
+                                courseId: modules.courseId
+                            })
+                                .from(modules)
+                                .where(
+                                    or(
+                                        ilike(modules.title, `%${query}%`),
+                                        ilike(modules.contentMarkdown, `%${query}%`)
+                                    )
                                 )
-                            )
-                            .limit(3);
+                                .limit(3);
 
-                        if (results.length === 0) {
-                            return "No relevant course content found.";
+                            if (results.length === 0) {
+                                return "No relevant course content found.";
+                            }
+
+                            // Format results for the LLM
+                            return results.map(r => `Found in ${r.courseId} - ${r.title}: ${r.content?.substring(0, 200)}...`).join('\n');
+
+                        } catch (error) {
+                            console.error("Search error:", error);
+                            return "Failed to search course content.";
                         }
+                    },
+                }),
+            },
+        });
 
-                        // Format results for the LLM
-                        return results.map(r => `Found in ${r.courseId} - ${r.title}: ${r.content?.substring(0, 200)}...`).join('\n');
+        // Log response for debugging
+        console.log("Eddi Response:", result.text);
 
-                    } catch (error) {
-                        console.error("Search error:", error);
-                        return "Failed to search course content.";
-                    }
-                },
-            }),
-        },
-    });
+        // Return JSON response (mimicking message structure for easy frontend consumption)
+        return NextResponse.json(result.response);
+    } catch (error: any) {
+        console.error("Gemini API Error:", error);
 
-    return result.toTextStreamResponse();
+        // Handle Rate Limits (429)
+        if (error.status === 429 || (error.message && error.message.includes('429'))) {
+            return NextResponse.json(
+                { text: "I'm currently overwhelmed with requests. Please give me a moment to catch my breath and try again." },
+                { status: 429 }
+            );
+        }
+
+        return NextResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
+        );
+    }
 }
