@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { StudentView } from '@/components/dashboard/StudentView';
 import { MentorDashboard } from '@/components/dashboard/MentorDashboard';
 import { Button } from '@/components/ui/button';
+import { EddiChat } from '@/components/dashboard/EddiChat';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -42,6 +43,7 @@ export default function DashboardPage() {
             </div>
 
             {userRole === 'student' ? <StudentView /> : <MentorDashboard />}
+            <EddiChat />
         </div>
     );
 }
