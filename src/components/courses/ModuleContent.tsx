@@ -4,13 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, BookOpen, CheckCircle, ExternalLink, PlayCircle, XCircle } from "lucide-react";
+import { ArrowLeft, BookOpen, CheckCircle, ExternalLink, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-import "katex/dist/katex.min.css";
 import { motion, useScroll, useSpring, AnimatePresence } from "framer-motion";
 
 type QuizQuestion = {
@@ -38,7 +37,7 @@ export default function ModuleContent({
     quizzes
 }: ModuleContentProps) {
     const [showQuiz, setShowQuiz] = useState(false);
-    const scrollRef = useRef(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
     const { scrollYProgress } = useScroll({ container: scrollRef });
     const scaleX = useSpring(scrollYProgress, {
         stiffness: 100,
@@ -68,7 +67,7 @@ export default function ModuleContent({
                     </div>
                 </div>
 
-                <ScrollArea className="flex-1 p-8 h-[calc(100vh-180px)]" ref={scrollRef}>
+                <ScrollArea className="flex-1 p-8 h-[calc(100vh-200px)]" viewportRef={scrollRef}>
                     <div className="prose prose-blue dark:prose-invert max-w-none">
                         <ReactMarkdown
                             remarkPlugins={[remarkMath]}
@@ -185,10 +184,30 @@ function QuizInterface({ quizzes }: { quizzes: QuizQuestion[] }) {
         return (
             <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
+                animate={{
+                    opacity: 1,
+                    scale: 1,
+                    boxShadow: ["0 0 0 0 rgba(0, 42, 92, 0)", "0 0 0 20px rgba(0, 42, 92, 0)"],
+                }}
+                transition={{
+                    duration: 0.5,
+                    boxShadow: {
+                        duration: 1.5,
+                        repeat: Infinity,
+                        repeatType: "loop"
+                    }
+                }}
                 className="bg-green-50 border border-green-200 rounded-xl p-8 text-center"
             >
-                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                <div className="relative inline-block">
+                    <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4 relative z-10" />
+                    <motion.div
+                        className="absolute inset-0 bg-[#002A5C] rounded-full z-0"
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 2, opacity: 0 }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                    />
+                </div>
                 <h3 className="text-xl font-bold text-green-800 mb-2">Quiz Complete!</h3>
                 <p className="text-green-700 mb-4">You scored {score} out of {quizzes.length}</p>
                 <div className="flex justify-center gap-4">
@@ -225,7 +244,7 @@ function QuizInterface({ quizzes }: { quizzes: QuizQuestion[] }) {
                     <div className="space-y-3 mb-6">
                         {question.options.map((option, idx) => {
                             const isSelected = selectedOption === option;
-                            const isCorrect = option === question.correctAnswer;
+
 
                             let btnClass = "w-full justify-start h-auto py-4 px-6 text-left hover:bg-muted transition-colors border";
                             let animate = {};

@@ -5,6 +5,7 @@ import { eq, and, ilike } from "drizzle-orm";
 import { notFound } from "next/navigation";
 
 // Only run DB queries on the server
+export const dynamic = 'force-dynamic';
 export default async function ModulePage({ params }: { params: Promise<{ courseId: string; moduleId: string }> }) {
     const { courseId, moduleId } = await params;
 
