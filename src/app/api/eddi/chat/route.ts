@@ -9,180 +9,153 @@ import { ilike, or, eq, and } from 'drizzle-orm';
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
-// Define schemas outside to help type inference
-const MapsToModuleSchema = z.object({
-    courseSlug: z.string().describe('The slug of the course'),
-    moduleSlug: z.string().describe('The slug/id of the module'),
+// Define schemas for tools
+const MapsToSchema = z.object({
+    path: z.string().describe('The internal relative path to navigate to (e.g., "/courses/calculus" or "/dashboard").'),
 });
 
-const CreateTicketSchema = z.object({
-    title: z.string(),
-    description: z.string(),
+const DraftTicketSchema = z.object({
+    subject: z.string().describe('The subject line of the ticket.'),
+    body: z.string().describe('The main content/description of the issue.'),
     priority: z.enum(['low', 'medium', 'high']).default('medium'),
 });
 
 const SearchSchema = z.object({
-    query: z.string(),
+    query: z.string().describe('The search query keyword.'),
+    type: z.enum(['course', 'module']).default('module').describe('The type of content to search for.'),
 });
 
 export async function POST(req: Request) {
     const { messages } = await req.json();
 
-    // Construct system instructions with context
+    // System instructions for Action Agent behavior
     const systemInstructions = `
-You are Eddi, the WorldEd learning assistant.
-You help students with Calculus and Linear Algebra.
-You can suggest opening modules or creating mentor tickets.
+You are Eddi, an intelligent "Action Agent" for WorldEd.
+Your goal is to help users navigate the platform, find content, and get support.
 
-**Your Capabilities:**
-1. **Navigation**: You can redirect users to specific course modules using the \`mapsToModule\` tool.
-2. **Support**: You can draft support tickets for users using the \`createSupportTicket\` tool.
-3. **Knowledge**: You can search the course content and quizzes to answer questions using the \`searchCourseContent\` tool.
+**CORE RULES:**
+1. **NEVER ask for IDs or Slugs.** Users don't know them. Use \`search_content\` to find them yourself.
+2. **Be Proactive.** If a user says "Open Calculus", SEARCH for "Calculus", find the slug, then CALL \`Maps_to\` with the path.
+3. **Generalist Scope.** You can help with math, science, or general platform questions.
 
-**Context:**
-- You should always try to answer questions based on the course content first.
-- If a user reports a bug or technical issue, suggest drafting a support ticket.
-- If a user asks to go to a specific topic, use the navigation tool.
+**Your Tools:**
+- \`search_content(query, type)\`: Search the database for courses or modules. Returns titles and IDs/Slugs.
+- \`Maps_to(path)\`: Triggers a navigation action in the user's browser. Use the IDs/Slugs found from search to construct paths like \`/courses/[course-slug]/[module-id]\`.
+- \`draft_mentor_ticket(subject, body)\`: Drafts a support ticket for the user to confirm.
 
-**Tone:**
-- Professional but approachable.
-- Academic and precise when discussing math/science.
-- Encouraging and helpful.
+**Example Flows:**
+- User: "Take me to linear algebra."
+  - You: Call \`search_content("Linear Algebra", "course")\`
+  - Tool Output: Found Course: title="Linear Algebra", id="linear-algebra"
+  - You: Call \`Maps_to("/courses/linear-algebra")\`
+  - You: "Navigating you to Linear Algebra."
+
+- User: "I found a bug in the quiz."
+  - You: Call \`draft_mentor_ticket("Bug Report: Quiz Issue", "User reported a bug in the quiz...")\`
+  - You: "I've drafted a ticket for you. Does this look right?"
 `;
 
     try {
         const result = await generateText({
-            model: google('gemini-2.0-flash'), // Updated to available 2.0 flash model
+            model: google('gemini-2.0-flash'),
             system: systemInstructions,
             messages,
+            maxSteps: 5, // Enable multi-step reasoning loop
             tools: {
-                mapsToModule: tool({
-                    description: 'Redirect the user to a specific course module page',
-                    // Use inputSchema as per provider-utils definition
-                    // We can use the Zod schema directly as it satisfies FlexibleSchema
-                    inputSchema: MapsToModuleSchema,
-                    execute: async (args) => {
-                        const { courseSlug, moduleSlug } = args;
-
-                        try {
-                            // Validate Course
-                            const course = await db.query.courses.findFirst({
-                                where: eq(courses.id, courseSlug)
-                            });
-
-                            if (!course) {
-                                return {
-                                    action: 'error',
-                                    message: `I couldn't find a course named "${courseSlug}". Available courses: Calculus, Linear Algebra.`
-                                };
-                            }
-
-                            // Validate Module (check ID or partial title match)
-                            // Since moduleSlug might be a guess, we search.
-                            const module = await db.query.modules.findFirst({
-                                where: and(
-                                    eq(modules.courseId, courseSlug),
-                                    or(
-                                        eq(modules.id, moduleSlug), // strict ID check
-                                        ilike(modules.title, `%${moduleSlug}%`) // loose title check
-                                    )
-                                )
-                            });
-
-                            if (!module) {
-                                // Find available modules for suggestion
-                                const courseModules = await db.query.modules.findMany({
-                                    where: eq(modules.courseId, courseSlug),
-                                    limit: 5,
-                                    columns: { title: true }
-                                });
-                                const suggestions = courseModules.map(m => m.title).join(', ');
-                                return {
-                                    action: 'error',
-                                    message: `I couldn't find a module matching "${moduleSlug}" in ${course.title}. Try searching for: ${suggestions || 'Introduction'}`
-                                };
-                            }
-
-                            return {
-                                action: 'redirect',
-                                url: `/courses/${courseSlug}/${module.id}`,
-                                message: `Navigating to ${course.title} - ${module.title}...`
-                            };
-                        } catch (error) {
-                            console.error("Tool execution error:", error);
-                            return {
-                                action: 'error',
-                                message: "I encountered an error while trying to find that module."
-                            }
-                        }
-                    },
-                }),
-                createSupportTicket: tool({
-                    description: 'Draft a support ticket for the user. ALWAYS ask for confirmation before submitting.',
-                    inputSchema: CreateTicketSchema,
-                    execute: async (args) => {
-                        const { title, description, priority } = args;
-                        // This tool doesn't actually write to DB directly in this flow.
-                        // It returns a "draft" state that the UI will render as a confirmation card.
-                        return {
-                            action: 'draft_ticket',
-                            ticket: { title, description, priority }
-                        };
-                    },
-                }),
-                searchCourseContent: tool({
-                    description: 'Search the database for course content, modules, or quizzes to answer a question.',
+                search_content: tool({
+                    description: 'Search for courses or modules by title to find their IDs/Slugs.',
                     inputSchema: SearchSchema,
-                    execute: async (args) => {
-                        const { query } = args;
+                    execute: async ({ query, type }) => {
                         try {
-                            // Perform a basic text search on modules (title and content)
-                            const results = await db.select({
-                                title: modules.title,
-                                content: modules.contentMarkdown,
-                                courseId: modules.courseId
-                            })
-                                .from(modules)
-                                .where(
-                                    or(
-                                        ilike(modules.title, `%${query}%`),
-                                        ilike(modules.contentMarkdown, `%${query}%`)
-                                    )
-                                )
-                                .limit(3);
-
-                            if (results.length === 0) {
-                                return "No relevant course content found.";
+                            if (type === 'course') {
+                                const results = await db.select({
+                                    id: courses.id,
+                                    title: courses.title
+                                }).from(courses).where(ilike(courses.title, `%${query}%`)).limit(3);
+                                return JSON.stringify(results);
+                            } else {
+                                const results = await db.select({
+                                    id: modules.id,
+                                    title: modules.title,
+                                    courseId: modules.courseId
+                                }).from(modules).where(ilike(modules.title, `%${query}%`)).limit(5);
+                                return JSON.stringify(results);
                             }
-
-                            // Format results for the LLM
-                            return results.map(r => `Found in ${r.courseId} - ${r.title}: ${r.content?.substring(0, 200)}...`).join('\n');
-
                         } catch (error) {
-                            console.error("Search error:", error);
-                            return "Failed to search course content.";
+                            console.error("Search Error:", error);
+                            return "Error searching content.";
                         }
-                    },
+                    }
                 }),
+                Maps_to: tool({
+                    description: 'Navigate the user to a specific path. Returns the action payload.',
+                    inputSchema: MapsToSchema,
+                    execute: async ({ path }) => {
+                        // This tool returns a special object that the frontend will intercept
+                        return { action: 'navigate', path };
+                    }
+                }),
+                draft_mentor_ticket: tool({
+                    description: 'Draft a support ticket for the user to review.',
+                    inputSchema: DraftTicketSchema,
+                    execute: async ({ subject, body, priority }) => {
+                        return { action: 'draft_ticket', ticket: { subject, body, priority } };
+                    }
+                })
             },
         });
 
-        // Log response for debugging
-        console.log("Eddi Response:", result.text);
+        // Log the reasoning steps and final response
+        console.log("Eddi Steps:", result.steps);
 
-        // Return simple JSON response with the text content
-        return NextResponse.json({ text: result.text });
+        // Check if the final step had tool calls that returned 'action' payloads
+        // or if the model just replied with text.
+        // Since we are not streaming, 'result.text' contains the final model response text.
+        // However, if the LAST step was a tool execution that returned a client-action, we need to pass that to the client.
+
+        // In this architecture, 'Maps_to' returns a JSON object.
+        // The model sees this JSON. Then it generates a text response like "Navigating...".
+        // WE need to send the ACTION to the frontend alongside the text.
+
+        // Let's inspect the tool calls in the result.
+        // We want to extract any 'navigate' or 'draft_ticket' actions from the tool results of the conversation.
+        // But simpler: The tool returns the action object as its result.
+        // The MODEL reads this result.
+        // We need to pass this RESULT to the frontend.
+
+        // Check for 'navigate' or 'draft_ticket' actions in the tool results
+        let actionPayload = null;
+
+        const steps = result.steps;
+
+        if (steps && steps.length > 0) {
+            for (const step of steps) {
+                if (step.toolResults && Array.isArray(step.toolResults)) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    for (const toolResult of step.toolResults as any[]) {
+                        if (toolResult.toolName === 'Maps_to' || toolResult.toolName === 'draft_mentor_ticket') {
+                            if (toolResult.result && toolResult.result.action) {
+                                actionPayload = toolResult.result;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return NextResponse.json({
+            text: result.text,
+            action: actionPayload
+        });
+
     } catch (error: any) {
         console.error("Gemini API Error:", error);
-
-        // Handle Rate Limits (429)
         if (error.status === 429 || (error.message && error.message.includes('429'))) {
             return NextResponse.json(
                 { text: "I'm currently overwhelmed with requests. Please give me a moment to catch my breath and try again." },
                 { status: 429 }
             );
         }
-
         return NextResponse.json(
             { error: "Internal Server Error" },
             { status: 500 }

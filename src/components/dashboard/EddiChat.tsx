@@ -80,7 +80,34 @@ export function EddiChat() {
                 throw new Error(`API Error: ${response.statusText}`);
             }
 
+
             const data = await response.json();
+
+            // Handle Action Agent payloads
+            if (data.action) {
+                if (data.action.action === 'navigate') {
+                    // Show a toast or small indicator? For now, just navigate.
+                    const path = data.action.path;
+                    // Add assistant message first so user sees the "Navigating..." text
+                    const assistantMessage: Message = {
+                        id: (Date.now() + 1).toString(),
+                        role: 'assistant',
+                        content: data.text || "Navigating...",
+                    };
+                    setMessages(prev => [...prev, assistantMessage]);
+
+                    // Delay slightly to let the message appear
+                    setTimeout(() => {
+                        router.push(path);
+                    }, 800);
+                    return; // Stop here
+                }
+
+                if (data.action.action === 'draft_ticket') {
+                    // TODO: Implement ticket confirmation UI
+                    // For now, just append the text which asks for confirmation
+                }
+            }
 
             // Create assistant message from standardized 'text' response
             const assistantMessage: Message = {
@@ -145,7 +172,7 @@ export function EddiChat() {
                         </div>
 
                         {/* Messages Area */}
-                        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+                        <ScrollArea className="flex-1 p-4" viewportRef={scrollRef}>
                             <div className="flex flex-col gap-4">
                                 {messages.length === 0 && (
                                     <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground mt-10">
