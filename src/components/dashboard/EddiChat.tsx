@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { UIMessage } from "ai";
+import { UIMessage, DefaultChatTransport } from "ai";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,9 +32,11 @@ export function EddiChat() {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     // Explicitly type the useChat return based on our inspection
-    // Cast options to any to bypass 'api' property missing in strict types (known issue/version mismatch)
     const { messages, sendMessage, status } = useChat({
-        api: '/api/eddi/chat',
+        experimental_throttle: 50,
+        transport: new DefaultChatTransport({
+            api: '/api/eddi/chat',
+        }),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onFinish: (result: any) => {
             // result is { message: UIMessage, ... } in newer versions
@@ -43,6 +45,7 @@ export function EddiChat() {
 
             // Handle tool executions client-side if needed for navigation
             if (message?.parts) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 message.parts.forEach((part: any) => {
                     // Check if part is a tool invocation (type usually starts with 'tool-' or check properties)
                     const isTool = part.type.startsWith('tool-') && 'toolName' in part;
@@ -59,8 +62,10 @@ export function EddiChat() {
                 });
             }
         },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
+
+
+
 
     const isLoading = status === 'streaming' || status === 'submitted';
 
