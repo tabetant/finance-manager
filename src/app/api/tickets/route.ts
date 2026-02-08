@@ -24,7 +24,7 @@ export async function POST(req: Request) {
             userId: user.id,
             title: body.title,
             description: body.description,
-            multimodalPayload: body.multimodalPayload || {},
+            aiMetadata: body.multimodalPayload || {},
             status: 'open',
         }).returning();
 

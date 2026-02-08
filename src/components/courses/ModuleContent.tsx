@@ -11,6 +11,12 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { motion, useScroll, useSpring, AnimatePresence } from "framer-motion";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type QuizQuestion = {
     question: string;
@@ -48,22 +54,35 @@ export default function ModuleContent({
     return (
         <div className="container mx-auto h-[calc(100vh-4rem)] overflow-hidden flex flex-col lg:flex-row relative">
             {/* Reading Progress Bar */}
+            {/* Reading Progress Bar */}
             <motion.div
-                className="absolute top-0 left-0 right-0 h-1 bg-[var(--worlded-orange)] z-50 origin-left"
+                className="absolute top-0 left-0 right-0 h-1.5 bg-[#002A5C] z-50 origin-left"
                 style={{ scaleX }}
             />
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col h-full overflow-hidden border-r bg-background">
-                <div className="p-4 border-b flex items-center gap-4 bg-[var(--worlded-blue)]/5">
-                    <Link href={`/courses/${courseId}`}>
-                        <Button variant="ghost" size="icon" className="hover:bg-[var(--worlded-blue)]/10 text-[var(--worlded-blue)]">
-                            <ArrowLeft className="w-5 h-5" />
-                        </Button>
-                    </Link>
-                    <div>
-                        <h1 className="text-xl font-bold text-[var(--worlded-blue)]">{moduleTitle}</h1>
-                        <p className="text-sm text-muted-foreground capitalize">{courseId.replace('-', ' ')}</p>
+                <div className="p-4 border-b flex flex-col gap-2 bg-[var(--worlded-blue)]/5">
+                    {/* Breadcrumbs */}
+                    <div className="flex items-center text-xs text-muted-foreground gap-2 mb-1">
+                        <Link href="/dashboard" className="hover:text-[var(--worlded-blue)] transition-colors">Courses</Link>
+                        <span>/</span>
+                        <Link href={`/courses/${courseId}`} className="hover:text-[var(--worlded-blue)] transition-colors capitalize">{courseId.replace('-', ' ')}</Link>
+                        <span>/</span>
+                        <span className="font-semibold text-[var(--worlded-blue)] truncate max-w-[200px]">{moduleTitle}</span>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <Link href={`/courses/${courseId}`}>
+                            <Button variant="ghost" size="icon" className="hover:bg-[var(--worlded-blue)]/10 text-[var(--worlded-blue)]">
+                                <ArrowLeft className="w-5 h-5" />
+                            </Button>
+                        </Link>
+                        <div>
+                            <h1 className="text-xl font-bold text-[var(--worlded-blue)] flex items-center gap-2">
+                                {moduleTitle}
+                            </h1>
+                        </div>
                     </div>
                 </div>
 
@@ -143,6 +162,42 @@ export default function ModuleContent({
                             </Link>
                         </div>
                     )}
+                </div>
+
+                <Separator className="my-6" />
+
+                {/* Key Concepts (Pedagogical Guidance) */}
+                <div>
+                    <h3 className="font-semibold mb-4 flex items-center gap-2 text-[var(--worlded-blue)]">
+                        <BookOpen className="w-4 h-4" /> Key Concepts
+                    </h3>
+                    <div className="space-y-3">
+                        <TooltipProvider>
+                            <div className="flex flex-wrap gap-2">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="cursor-help px-3 py-1.5 bg-blue-50 text-[var(--worlded-blue)] rounded-md text-xs font-medium border border-blue-100 hover:bg-blue-100 transition-colors">
+                                            Eigenvector
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs bg-[var(--worlded-blue)] text-white border-blue-800">
+                                        <p>A non-zero vector that changes at most by a scalar factor when that linear transformation is applied to it.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="cursor-help px-3 py-1.5 bg-blue-50 text-[var(--worlded-blue)] rounded-md text-xs font-medium border border-blue-100 hover:bg-blue-100 transition-colors">
+                                            Linear Transformation
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs bg-[var(--worlded-blue)] text-white border-blue-800">
+                                        <p>A function between two vector spaces that preserves the operations of vector addition and scalar multiplication.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </div>
+                        </TooltipProvider>
+                    </div>
                 </div>
             </div>
         </div>
@@ -245,26 +300,25 @@ function QuizInterface({ quizzes }: { quizzes: QuizQuestion[] }) {
                         {question.options.map((option, idx) => {
                             const isSelected = selectedOption === option;
 
-
-                            let btnClass = "w-full justify-start h-auto py-4 px-6 text-left hover:bg-muted transition-colors border";
+                            let btnClass = "w-full justify-start h-auto py-4 px-6 text-left hover:bg-muted transition-colors border relative overflow-hidden";
                             let animate = {};
 
                             if (isSubmitted) {
                                 if (option === question.correctAnswer) {
-                                    btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-green-100 border-green-500 text-green-800";
+                                    btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-green-50 border-green-500 text-green-900 ring-1 ring-green-500";
                                     animate = { scale: [1, 1.02, 1] }; // Pulse
                                 } else if (isSelected) {
-                                    btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-red-100 border-red-500 text-red-800";
+                                    btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-red-50 border-red-500 text-red-900";
                                     animate = { x: [-5, 5, -5, 5, 0] }; // Shake
                                 }
                             } else if (isSelected) {
-                                btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-[var(--worlded-blue)] text-white hover:bg-[var(--worlded-blue)]/90";
+                                btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-[#002A5C]/5 border-[#002A5C] text-[#002A5C] ring-1 ring-[#002A5C]";
                             }
 
                             return (
                                 <motion.button
                                     key={idx}
-                                    className={`relative flex items-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${btnClass}`}
+                                    className={`relative flex items-center rounded-lg text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${btnClass}`}
                                     onClick={() => !isSubmitted && setSelectedOption(option)}
                                     disabled={isSubmitted}
                                     animate={animate}
@@ -277,6 +331,23 @@ function QuizInterface({ quizzes }: { quizzes: QuizQuestion[] }) {
                             );
                         })}
                     </div>
+
+                    {isSubmitted && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6"
+                        >
+                            <h4 className="font-semibold text-[#002A5C] flex items-center gap-2 mb-1">
+                                <BookOpen className="w-4 h-4" />
+                                Why is this correct?
+                            </h4>
+                            <p className="text-sm text-blue-900">
+                                This answer is correct because it follows the fundamental theorem of calculus which links the concept of differentiating a function with integrating a function.
+                                {/* In a real app, this explanation would come from the database/AI metadata */}
+                            </p>
+                        </motion.div>
+                    )}
                 </motion.div>
             </AnimatePresence>
 

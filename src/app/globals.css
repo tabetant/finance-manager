@@ -25,5 +25,20 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Typography for Math vs Prose */
+.prose {
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.katex {
+  font-family: 'KaTeX_Main', 'Times New Roman', serif !important;
+  font-size: 1.1em;
+}
+
+/* Smooth scrolling for anchor links */
+html {
+  scroll-behavior: smooth;
 }
