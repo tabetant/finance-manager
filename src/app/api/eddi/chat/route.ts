@@ -50,7 +50,7 @@ You can suggest opening modules or creating mentor tickets.
 `;
 
     const result = streamText({
-        model: google('gemini-1.5-flash'), // Using flash as it is more likely to be available in v1beta
+        model: google('gemini-2.0-flash'), // Updated to available 2.0 flash model
         system: systemInstructions,
         messages,
         tools: {
