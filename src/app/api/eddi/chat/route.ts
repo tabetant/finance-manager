@@ -170,8 +170,8 @@ You can suggest opening modules or creating mentor tickets.
         // Log response for debugging
         console.log("Eddi Response:", result.text);
 
-        // Return JSON response (mimicking message structure for easy frontend consumption)
-        return NextResponse.json(result.response);
+        // Return simple JSON response with the text content
+        return NextResponse.json({ text: result.text });
     } catch (error: any) {
         console.error("Gemini API Error:", error);
 

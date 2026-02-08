@@ -81,77 +81,13 @@ export function EddiChat() {
             }
 
             const data = await response.json();
-            // data should be the assistant message object from generateText result.response
-            // It typically looks like { role: 'assistant', content: ... }
-            // generateText output structure needs verification. 
-            // If it returns result.response, it's a model message.
 
-            // Assuming data is the AssistantMessage
+            // Create assistant message from standardized 'text' response
             const assistantMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: data.content?.[0]?.text || (typeof data.content === 'string' ? data.content : ""), // Safely access text content
-                parts: data.content // Pass full content parts for tool handling
+                content: data.text || "",
             };
-
-            // Handle Tool Calls manually
-            if (assistantMessage.parts) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                assistantMessage.parts.forEach((part: any) => {
-                    // Check if part is a tool invocation
-                    const isTool = part.type === 'tool-call';
-
-                    if (isTool) {
-                        const toolCall = part;
-                        if (toolCall.toolName === 'mapsToModule') {
-                            // The tool result isn't available in standard generateText response content unless we execute it on server.
-                            // BUT wait, generateText executes tools on server if maxSteps is set?
-                            // OR does it return tool calls for client to execute?
-                            // The route.ts uses tools. If the model invokes a tool, generateText executes it if 'maxSteps' > 1 or if we handle it.
-                            // Wait, previously streamText had server-side execution.
-                            // If generateText executes the tool, the FINAL response will be the text AFTER tool execution (if maxSteps allowing roundtrip).
-                            // If maxSteps is 1 (default), it returns the tool call.
-                            // In route.ts I did NOT set maxSteps. So it might return a tool call.
-
-                            // HOWEVER, the logic in route.ts defines `execute` functions. 
-                            // If `generateText` is called without `maxSteps` (defaults to 1), does it run the tool?
-                            // Actually, with `tools` defined, `generateText` usually stops at tool call if maxSteps=1.
-                            // BUT `execute` is defined in the tool definition.
-                            // We need to enable multi-step if we want automatic execution.
-                            // OR we handle the client side result if it returns tool results.
-
-                            // Let's assume for now we might get text OR tool calls.
-                            // If we get tool calls, we might need to display them or handle them.
-                            // But previous `useChat` had client-side handling for `mapsToModule`.
-                            // Actually previous `useChat` handling was checking `toolPart.result`.
-                            // This implies the tool WAS executed.
-                            // To ensure execution on server, we should add `maxSteps: 5` to route.ts.
-                            // I should verify route.ts again. I didn't add maxSteps.
-                            // I should add maxSteps to route.ts in a future step or now.
-                            // FOR NOW, let's just handle the message receipt.
-                        }
-                    }
-                });
-            }
-
-            // If the backend executes tools (needs maxSteps), the content will contain the final answer.
-            // If it returns tool calls, we see them.
-            // Let's just append the message for now.
-
-            // WORKAROUND: If content is array of parts, we need to ensure UIMessage compatibility.
-            // UIMessage 'content' is usually string. 'parts' is array.
-
-            // Adjust assistant message content if it is an array of parts
-            if (Array.isArray(data.content)) {
-                assistantMessage.content = data.content.map((p: any) => {
-                    if (p.type === 'text') return p.text;
-                    return '';
-                }).join('');
-                assistantMessage.parts = data.content;
-            } else if (typeof data.content === 'string') {
-                assistantMessage.content = data.content;
-            }
-
 
             setMessages(prev => [...prev, assistantMessage]);
 
@@ -167,6 +103,8 @@ export function EddiChat() {
             setIsLoading(false);
         }
     };
+
+
 
     // Scroll to bottom when messages change
     useEffect(() => {
