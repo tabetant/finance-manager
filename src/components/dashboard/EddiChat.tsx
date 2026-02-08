@@ -34,6 +34,7 @@ export function EddiChat() {
     // Explicitly type the useChat return based on our inspection
     // Cast options to any to bypass 'api' property missing in strict types (known issue/version mismatch)
     const { messages, sendMessage, status } = useChat({
+        api: '/api/eddi/chat',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onFinish: (result: any) => {
             // result is { message: UIMessage, ... } in newer versions
