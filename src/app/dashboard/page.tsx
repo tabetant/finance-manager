@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react'
 import { StudentView } from '@/components/dashboard/StudentView';
 import { MentorDashboard } from '@/components/dashboard/MentorDashboard';
 import { Button } from '@/components/ui/button';
-import { EddiChat } from '@/components/dashboard/EddiChat';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -32,7 +31,7 @@ export default function DashboardPage() {
     return (
         <div className="relative">
             {/* Dev Toggle for demo purposes */}
-            <div className="fixed bottom-4 right-4 z-50 opacity-50 hover:opacity-100 transition-opacity">
+            <div className="fixed bottom-4 left-4 z-40 opacity-50 hover:opacity-100 transition-opacity">
                 <Button
                     variant="outline"
                     size="sm"
@@ -43,7 +42,7 @@ export default function DashboardPage() {
             </div>
 
             {userRole === 'student' ? <StudentView /> : <MentorDashboard />}
-            <EddiChat />
         </div>
     );
 }
+

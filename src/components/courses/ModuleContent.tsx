@@ -54,32 +54,31 @@ export default function ModuleContent({
     return (
         <div className="container mx-auto h-[calc(100vh-4rem)] overflow-hidden flex flex-col lg:flex-row relative">
             {/* Reading Progress Bar */}
-            {/* Reading Progress Bar */}
             <motion.div
-                className="absolute top-0 left-0 right-0 h-1.5 bg-[#002A5C] z-50 origin-left"
+                className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] z-50 origin-left"
                 style={{ scaleX }}
             />
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col h-full overflow-hidden border-r bg-background">
-                <div className="p-4 border-b flex flex-col gap-2 bg-[var(--worlded-blue)]/5">
+                <div className="p-4 border-b flex flex-col gap-2 bg-[var(--primary)]/5">
                     {/* Breadcrumbs */}
-                    <div className="flex items-center text-xs text-muted-foreground gap-2 mb-1">
-                        <Link href="/dashboard" className="hover:text-[var(--worlded-blue)] transition-colors">Courses</Link>
+                    <div className="flex items-center text-xs text-[var(--text-muted)] gap-2 mb-1">
+                        <Link href="/dashboard" className="hover:text-[var(--primary)] transition-colors">Courses</Link>
                         <span>/</span>
-                        <Link href={`/courses/${courseId}`} className="hover:text-[var(--worlded-blue)] transition-colors capitalize">{courseId.replace('-', ' ')}</Link>
+                        <Link href={`/courses/${courseId}`} className="hover:text-[var(--primary)] transition-colors capitalize">{courseId.replace('-', ' ')}</Link>
                         <span>/</span>
-                        <span className="font-semibold text-[var(--worlded-blue)] truncate max-w-[200px]">{moduleTitle}</span>
+                        <span className="font-semibold text-[var(--primary)] truncate max-w-[200px]">{moduleTitle}</span>
                     </div>
 
                     <div className="flex items-center gap-4">
                         <Link href={`/courses/${courseId}`}>
-                            <Button variant="ghost" size="icon" className="hover:bg-[var(--worlded-blue)]/10 text-[var(--worlded-blue)]">
+                            <Button variant="ghost" size="icon" className="hover:bg-[var(--primary)]/10 text-[var(--primary)]">
                                 <ArrowLeft className="w-5 h-5" />
                             </Button>
                         </Link>
                         <div>
-                            <h1 className="text-xl font-bold text-[var(--worlded-blue)] flex items-center gap-2">
+                            <h1 className="text-xl font-bold text-[var(--primary)] flex items-center gap-2">
                                 {moduleTitle}
                             </h1>
                         </div>
@@ -98,11 +97,11 @@ export default function ModuleContent({
 
                     <div className="mt-12 mb-8">
                         <Separator className="mb-8" />
-                        <h2 className="text-2xl font-bold mb-4 text-[var(--worlded-blue)]">Knowledge Check</h2>
+                        <h2 className="text-2xl font-bold mb-4 text-[var(--primary)]">Knowledge Check</h2>
                         {!showQuiz ? (
-                            <div className="bg-muted/30 p-8 rounded-xl text-center">
-                                <p className="mb-4 text-muted-foreground">Ready to test your understanding of this module?</p>
-                                <Button onClick={() => setShowQuiz(true)} className="bg-[var(--worlded-orange)] hover:bg-orange-600 text-white">
+                            <div className="bg-[var(--primary)]/5 p-8 rounded-2xl text-center border border-[var(--primary)]/20">
+                                <p className="mb-4 text-[var(--text-muted)]">Ready to test your understanding of this module?</p>
+                                <Button onClick={() => setShowQuiz(true)} className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white rounded-xl px-8">
                                     Start Quiz
                                 </Button>
                             </div>
@@ -114,8 +113,8 @@ export default function ModuleContent({
             </div>
 
             {/* Sidebar / Resources */}
-            <div className="w-full lg:w-80 bg-muted/30 p-4 border-l overflow-y-auto h-[calc(100vh-4rem)]">
-                <h3 className="font-semibold mb-4 flex items-center gap-2 text-[var(--worlded-blue)]">
+            <div className="w-full lg:w-80 bg-white p-4 border-l overflow-y-auto h-[calc(100vh-4rem)]">
+                <h3 className="font-semibold mb-4 flex items-center gap-2 text-[var(--primary)]">
                     <BookOpen className="w-4 h-4" /> Recommended Resources
                 </h3>
 
@@ -146,10 +145,10 @@ export default function ModuleContent({
                                 Reading Material
                             </label>
                             <Link href={textbookUrl} target="_blank" rel="noopener noreferrer">
-                                <Card className="hover:bg-accent transition-colors border-l-4 border-l-[var(--worlded-blue)]">
+                                <Card className="hover:bg-[var(--primary)]/5 transition-colors border-l-4 border-l-[var(--primary)]">
                                     <CardContent className="p-3 flex items-start gap-3">
-                                        <div className="p-2 bg-blue-100 rounded-md">
-                                            <BookOpen className="w-4 h-4 text-[var(--worlded-blue)]" />
+                                        <div className="p-2 bg-[var(--primary)]/10 rounded-md">
+                                            <BookOpen className="w-4 h-4 text-[var(--primary)]" />
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium">Textbook Resource</p>
@@ -168,7 +167,7 @@ export default function ModuleContent({
 
                 {/* Key Concepts (Pedagogical Guidance) */}
                 <div>
-                    <h3 className="font-semibold mb-4 flex items-center gap-2 text-[var(--worlded-blue)]">
+                    <h3 className="font-semibold mb-4 flex items-center gap-2 text-[var(--primary)]">
                         <BookOpen className="w-4 h-4" /> Key Concepts
                     </h3>
                     <div className="space-y-3">
@@ -176,22 +175,22 @@ export default function ModuleContent({
                             <div className="flex flex-wrap gap-2">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <div className="cursor-help px-3 py-1.5 bg-blue-50 text-[var(--worlded-blue)] rounded-md text-xs font-medium border border-blue-100 hover:bg-blue-100 transition-colors">
+                                        <div className="cursor-help px-3 py-1.5 bg-[var(--primary)]/10 text-[var(--primary)] rounded-lg text-xs font-medium border border-[var(--primary)]/20 hover:bg-[var(--primary)]/20 transition-colors">
                                             Eigenvector
                                         </div>
                                     </TooltipTrigger>
-                                    <TooltipContent className="max-w-xs bg-[var(--worlded-blue)] text-white border-blue-800">
+                                    <TooltipContent className="max-w-xs bg-[var(--primary)] text-white border-[var(--primary)]">
                                         <p>A non-zero vector that changes at most by a scalar factor when that linear transformation is applied to it.</p>
                                     </TooltipContent>
                                 </Tooltip>
 
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <div className="cursor-help px-3 py-1.5 bg-blue-50 text-[var(--worlded-blue)] rounded-md text-xs font-medium border border-blue-100 hover:bg-blue-100 transition-colors">
+                                        <div className="cursor-help px-3 py-1.5 bg-[var(--primary)]/10 text-[var(--primary)] rounded-lg text-xs font-medium border border-[var(--primary)]/20 hover:bg-[var(--primary)]/20 transition-colors">
                                             Linear Transformation
                                         </div>
                                     </TooltipTrigger>
-                                    <TooltipContent className="max-w-xs bg-[var(--worlded-blue)] text-white border-blue-800">
+                                    <TooltipContent className="max-w-xs bg-[var(--primary)] text-white border-[var(--primary)]">
                                         <p>A function between two vector spaces that preserves the operations of vector addition and scalar multiplication.</p>
                                     </TooltipContent>
                                 </Tooltip>
@@ -242,7 +241,7 @@ function QuizInterface({ quizzes }: { quizzes: QuizQuestion[] }) {
                 animate={{
                     opacity: 1,
                     scale: 1,
-                    boxShadow: ["0 0 0 0 rgba(0, 42, 92, 0)", "0 0 0 20px rgba(0, 42, 92, 0)"],
+                    boxShadow: ["0 0 0 0 rgba(99, 102, 241, 0)", "0 0 0 20px rgba(99, 102, 241, 0)"],
                 }}
                 transition={{
                     duration: 0.5,
@@ -252,25 +251,25 @@ function QuizInterface({ quizzes }: { quizzes: QuizQuestion[] }) {
                         repeatType: "loop"
                     }
                 }}
-                className="bg-green-50 border border-green-200 rounded-xl p-8 text-center"
+                className="bg-[var(--success)]/10 border border-[var(--success)]/30 rounded-2xl p-8 text-center"
             >
                 <div className="relative inline-block">
-                    <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4 relative z-10" />
+                    <CheckCircle className="w-12 h-12 text-[var(--success)] mx-auto mb-4 relative z-10" />
                     <motion.div
-                        className="absolute inset-0 bg-[#002A5C] rounded-full z-0"
+                        className="absolute inset-0 bg-[var(--primary)] rounded-full z-0"
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 2, opacity: 0 }}
                         transition={{ duration: 1, repeat: Infinity }}
                     />
                 </div>
-                <h3 className="text-xl font-bold text-green-800 mb-2">Quiz Complete!</h3>
-                <p className="text-green-700 mb-4">You scored {score} out of {quizzes.length}</p>
+                <h3 className="text-xl font-bold text-[var(--success)] mb-2">Quiz Complete!</h3>
+                <p className="text-[var(--success)] mb-4">You scored {score} out of {quizzes.length}</p>
                 <div className="flex justify-center gap-4">
-                    <Button onClick={() => window.location.reload()} variant="outline">
+                    <Button onClick={() => window.location.reload()} variant="outline" className="rounded-xl">
                         Retake Quiz
                     </Button>
                     <Link href="/dashboard">
-                        <Button className="bg-[var(--worlded-blue)] text-white hover:bg-blue-800">
+                        <Button className="bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] rounded-xl">
                             Back to Dashboard
                         </Button>
                     </Link>
@@ -300,19 +299,19 @@ function QuizInterface({ quizzes }: { quizzes: QuizQuestion[] }) {
                         {question.options.map((option, idx) => {
                             const isSelected = selectedOption === option;
 
-                            let btnClass = "w-full justify-start h-auto py-4 px-6 text-left hover:bg-muted transition-colors border relative overflow-hidden";
+                            let btnClass = "w-full justify-start h-auto py-4 px-6 text-left hover:bg-[var(--primary)]/5 transition-colors border border-[var(--border-subtle)] rounded-xl relative overflow-hidden";
                             let animate = {};
 
                             if (isSubmitted) {
                                 if (option === question.correctAnswer) {
-                                    btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-green-50 border-green-500 text-green-900 ring-1 ring-green-500";
+                                    btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-[var(--success)]/10 border-[var(--success)] text-[var(--success)] ring-1 ring-[var(--success)] rounded-xl";
                                     animate = { scale: [1, 1.02, 1] }; // Pulse
                                 } else if (isSelected) {
-                                    btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-red-50 border-red-500 text-red-900";
+                                    btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-red-50 border-red-500 text-red-900 rounded-xl";
                                     animate = { x: [-5, 5, -5, 5, 0] }; // Shake
                                 }
                             } else if (isSelected) {
-                                btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-[#002A5C]/5 border-[#002A5C] text-[#002A5C] ring-1 ring-[#002A5C]";
+                                btnClass = "w-full justify-start h-auto py-4 px-6 text-left bg-[var(--primary)]/5 border-[var(--primary)] text-[var(--primary)] ring-1 ring-[var(--primary)] rounded-xl";
                             }
 
                             return (
@@ -325,7 +324,7 @@ function QuizInterface({ quizzes }: { quizzes: QuizQuestion[] }) {
                                     transition={{ duration: 0.4 }}
                                 >
                                     {option}
-                                    {isSubmitted && option === question.correctAnswer && <CheckCircle className="ml-auto w-5 h-5 text-green-600" />}
+                                    {isSubmitted && option === question.correctAnswer && <CheckCircle className="ml-auto w-5 h-5 text-[var(--success)]" />}
                                     {isSubmitted && isSelected && option !== question.correctAnswer && <XCircle className="ml-auto w-5 h-5 text-red-600" />}
                                 </motion.button>
                             );
@@ -336,13 +335,13 @@ function QuizInterface({ quizzes }: { quizzes: QuizQuestion[] }) {
                         <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6"
+                            className="bg-[var(--primary)]/5 border border-[var(--primary)]/20 rounded-xl p-4 mb-6"
                         >
-                            <h4 className="font-semibold text-[#002A5C] flex items-center gap-2 mb-1">
+                            <h4 className="font-semibold text-[var(--primary)] flex items-center gap-2 mb-1">
                                 <BookOpen className="w-4 h-4" />
                                 Why is this correct?
                             </h4>
-                            <p className="text-sm text-blue-900">
+                            <p className="text-sm text-[var(--primary)]/80">
                                 This answer is correct because it follows the fundamental theorem of calculus which links the concept of differentiating a function with integrating a function.
                                 {/* In a real app, this explanation would come from the database/AI metadata */}
                             </p>
@@ -356,14 +355,14 @@ function QuizInterface({ quizzes }: { quizzes: QuizQuestion[] }) {
                     <Button
                         onClick={handleSubmit}
                         disabled={!selectedOption}
-                        className="bg-[var(--worlded-orange)] hover:bg-orange-600 text-white"
+                        className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white rounded-xl"
                     >
                         Submit Answer
                     </Button>
                 ) : (
                     <Button
                         onClick={handleNext}
-                        className="bg-[var(--worlded-blue)] hover:bg-blue-800 text-white"
+                        className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-xl"
                     >
                         {currentQuestion < quizzes.length - 1 ? "Next Question" : "Finish Quiz"}
                     </Button>

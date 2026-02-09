@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, X, Send, Bot, Loader2, ExternalLink, BookOpen, FileText } from "lucide-react";
+import { X, Send, Bot, Loader2, ExternalLink, BookOpen, FileText, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -36,12 +36,16 @@ interface ActionPayload {
     ticket?: { subject: string; body: string; priority: string };
 }
 
+interface EddiChatProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
+
 // ============================================================================
 // COMPONENT
 // ============================================================================
 
-export function EddiChat() {
-    const [isOpen, setIsOpen] = useState(false);
+export function EddiChat({ isOpen, onClose }: EddiChatProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [input, setInput] = useState('');
     const [messages, setMessages] = useState<Message[]>([]);
@@ -98,32 +102,33 @@ export function EddiChat() {
                     const errorData = await response.json();
                     throw new Error(errorData.text || "Rate limit exceeded.");
                 }
-                throw new Error(`API Error: ${response.statusText}`);
+                throw new Error("Failed to get response from Eddi.");
             }
 
             const data = await response.json();
-            console.log("Eddi Response:", data);
 
-            // Handle different action types
-            if (data.action) {
-                handleAction(data.action as ActionPayload, data.text);
-                return;
+            if (data.actionPayload) {
+                handleAction(data.actionPayload, data.text);
             }
 
-            // Regular text response
             const assistantMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: data.text || "",
+                content: data.text,
+                displayList: data.actionPayload?.action === 'display_list'
+                    ? { listTitle: data.actionPayload.listTitle, items: data.actionPayload.items }
+                    : undefined,
+                isFeatureUnavailable: data.actionPayload?.action === 'feature_unavailable',
+                featureSuggestion: data.actionPayload?.suggestion,
             };
-            setMessages(prev => [...prev, assistantMessage]);
 
-        } catch (error: unknown) {
-            console.error("Chat Error:", error);
+            setMessages(prev => [...prev, assistantMessage]);
+        } catch (error) {
+            console.error('Error sending message:', error);
             const errorMessage: Message = {
-                id: Date.now().toString(),
+                id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: (error as Error).message || "Something went wrong. Please try again.",
+                content: error instanceof Error ? error.message : "Sorry, I encountered an error. Please try again.",
             };
             setMessages(prev => [...prev, errorMessage]);
         } finally {
@@ -132,107 +137,45 @@ export function EddiChat() {
         }
     };
 
-    const handleAction = (action: ActionPayload, textResponse: string) => {
-        switch (action.action) {
+    const handleAction = (actionPayload: ActionPayload, textResponse: string) => {
+        switch (actionPayload.action) {
             case 'navigate':
-                handleNavigate(action.path!, textResponse);
+                if (actionPayload.path) {
+                    setLoadingAction(`Navigating to ${actionPayload.path}...`);
+                    setTimeout(() => {
+                        router.push(actionPayload.path!);
+                        onClose();
+                    }, 500);
+                }
                 break;
             case 'launch_quiz':
-                handleQuizLaunch(action.path!, textResponse, action.scrollToQuiz);
+                if (actionPayload.scrollToQuiz) {
+                    setLoadingAction("Scrolling to quiz...");
+                    setTimeout(() => {
+                        const quizSection = document.getElementById('quiz-section');
+                        if (quizSection) {
+                            quizSection.scrollIntoView({ behavior: 'smooth' });
+                        }
+                        onClose();
+                    }, 500);
+                }
                 break;
             case 'display_list':
-                handleDisplayList(action.listTitle!, action.items!, textResponse);
-                break;
-            case 'draft_ticket':
-                handleDraftTicket(action.ticket!, textResponse);
+                // Handled in message rendering
                 break;
             case 'feature_unavailable':
-                handleFeatureUnavailable(action.message!, action.suggestion, textResponse);
+                // Handled in message rendering
                 break;
             default:
-                // Fallback: just show the text
-                const message: Message = {
-                    id: (Date.now() + 1).toString(),
-                    role: 'assistant',
-                    content: textResponse,
-                };
-                setMessages(prev => [...prev, message]);
+                break;
         }
     };
 
-    const handleNavigate = (path: string, textResponse: string) => {
-        const destination = path.split('/').pop()?.replace(/-/g, ' ') || "destination";
-        const formattedDestination = destination.charAt(0).toUpperCase() + destination.slice(1);
-
-        const assistantMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: textResponse || `Opening ${formattedDestination}...`,
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-        setLoadingAction('Navigating...');
-
-        setTimeout(() => {
+    const handleListItemClick = (path?: string) => {
+        if (path) {
             router.push(path);
-        }, 600);
-    };
-
-    const handleQuizLaunch = (path: string, textResponse: string, scrollToQuiz?: boolean) => {
-        const assistantMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: textResponse || "Starting the quiz...",
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-        setLoadingAction('Loading quiz...');
-
-        setTimeout(() => {
-            router.push(path);
-            // If scrollToQuiz is true, we'll scroll after navigation
-            if (scrollToQuiz) {
-                // Give time for the page to load, then scroll
-                setTimeout(() => {
-                    const quizSection = document.getElementById('quiz-section');
-                    if (quizSection) {
-                        quizSection.scrollIntoView({ behavior: 'smooth' });
-                    }
-                }, 1000);
-            }
-        }, 600);
-    };
-
-    const handleDisplayList = (listTitle: string, items: { title: string; path?: string; description?: string }[], textResponse: string) => {
-        const assistantMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: textResponse,
-            displayList: { listTitle, items },
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-    };
-
-    const handleDraftTicket = (ticket: { subject: string; body: string; priority: string }, textResponse: string) => {
-        const assistantMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: textResponse || `I've drafted a ticket for you:\n\n**Subject:** ${ticket.subject}\n**Priority:** ${ticket.priority}\n\n${ticket.body}\n\n(Ticket submission coming soon!)`,
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-    };
-
-    const handleFeatureUnavailable = (message: string, suggestion?: string, textResponse?: string) => {
-        const assistantMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: textResponse || message,
-            isFeatureUnavailable: true,
-            featureSuggestion: suggestion,
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-    };
-
-    const handleListItemClick = (path: string) => {
-        router.push(path);
+            onClose();
+        }
     };
 
     // ========================================================================
@@ -240,171 +183,218 @@ export function EddiChat() {
     // ========================================================================
 
     return (
-        <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end">
-            <AnimatePresence>
-                {isOpen && (
+        <AnimatePresence>
+            {isOpen && (
+                <>
+                    {/* Backdrop */}
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className={`mb-4 bg-background border rounded-lg shadow-xl overflow-hidden flex flex-col
-                            ${isExpanded ? 'w-[800px] h-[600px]' : 'w-[380px] h-[520px]'}
-                            transition-all duration-300 ease-in-out`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={onClose}
+                        className="fixed inset-0 bg-black/20 z-40"
+                    />
+
+                    {/* Chat Panel - Slide from right */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 400 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 400 }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                        className={`fixed right-0 top-0 bottom-0 bg-white shadow-2xl z-50 flex flex-col border-l border-border
+                            ${isExpanded ? 'w-[800px]' : 'w-full sm:w-[400px]'}`}
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between p-3 border-b bg-muted/50">
-                            <div className="flex items-center gap-2">
-                                <div className="p-1.5 bg-[var(--worlded-blue)] rounded-md">
-                                    <Bot className="w-4 h-4 text-white" />
+                        <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-[var(--worlded-purple)] to-[var(--worlded-pink)] text-white">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                    <Sparkles className="text-white" size={20} />
                                 </div>
-                                <span className="font-semibold text-sm">Eddi AI</span>
-                                {loadingAction && (
-                                    <span className="text-xs text-muted-foreground animate-pulse">
-                                        {loadingAction}
-                                    </span>
-                                )}
+                                <div>
+                                    <h2 className="font-semibold text-white">Eddi</h2>
+                                    <p className="text-xs text-white/80">Your Learning Assistant</p>
+                                </div>
                             </div>
                             <div className="flex items-center gap-1">
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-7 px-2 text-xs"
+                                    className="h-7 px-2 text-xs text-white hover:bg-white/20 hover:text-white hidden sm:flex"
                                     onClick={() => setIsExpanded(!isExpanded)}
                                 >
                                     {isExpanded ? 'Collapse' : 'Expand'}
                                 </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7"
-                                    onClick={() => setIsOpen(false)}
+                                <button
+                                    onClick={onClose}
+                                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                                 >
-                                    <X className="w-4 h-4" />
-                                </Button>
+                                    <X className="text-white" size={20} />
+                                </button>
                             </div>
                         </div>
 
                         {/* Messages Area */}
-                        <ScrollArea className="flex-1 p-4" viewportRef={scrollRef}>
-                            <div className="flex flex-col gap-4">
-                                {messages.length === 0 && (
-                                    <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground mt-10">
-                                        <Bot className="w-12 h-12 mb-4 text-[var(--worlded-blue)]/20" />
-                                        <p className="text-sm font-medium mb-2">Hi! I&apos;m Eddi, your learning assistant.</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            I can help you navigate courses, find content, and start quizzes.
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50" ref={scrollRef}>
+                            {messages.length === 0 && (
+                                <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground mt-10">
+                                    <Sparkles className="w-12 h-12 mb-4 text-[var(--worlded-purple)]/30" />
+                                    <p className="text-sm font-medium mb-2">Hi! I&apos;m Eddi, your learning assistant.</p>
+                                    <p className="text-xs text-muted-foreground mb-4">
+                                        I can help you navigate courses, find content, and start quizzes.
+                                    </p>
+                                    <div className="flex flex-wrap gap-2 justify-center">
+                                        <SuggestionChip
+                                            text="Show me all courses"
+                                            onClick={() => setInput("Show me all courses")}
+                                        />
+                                        <SuggestionChip
+                                            text="Start a quiz"
+                                            onClick={() => setInput("Start a quiz")}
+                                        />
+                                        <SuggestionChip
+                                            text="Help with calculus"
+                                            onClick={() => setInput("Help me with calculus")}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {messages.map((msg) => (
+                                <motion.div
+                                    key={msg.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                >
+                                    <div className={`
+                                        max-w-[85%] rounded-2xl px-4 py-2.5
+                                        ${msg.role === 'user'
+                                            ? 'bg-primary text-white rounded-br-md'
+                                            : 'bg-white border border-border rounded-bl-md shadow-sm'
+                                        }
+                                    `}>
+                                        {msg.role === 'assistant' && (
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <div className="w-5 h-5 bg-gradient-to-r from-[var(--worlded-purple)] to-[var(--worlded-pink)] rounded-full flex items-center justify-center">
+                                                    <Sparkles className="text-white" size={12} />
+                                                </div>
+                                                <span className="text-xs font-medium text-muted-foreground">Eddi</span>
+                                            </div>
+                                        )}
+                                        <p className={`text-sm leading-relaxed ${msg.role === 'user' ? 'text-white' : 'text-foreground'}`}>
+                                            {msg.content}
                                         </p>
-                                        <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                                            <SuggestionChip
-                                                text="Show me all courses"
-                                                onClick={() => setInput("Show me all courses")}
+
+                                        {/* Display List */}
+                                        {msg.displayList && (
+                                            <div className="mt-3 space-y-2">
+                                                <p className="text-xs font-medium text-muted-foreground">{msg.displayList.listTitle}</p>
+                                                {msg.displayList.items.map((item, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => handleListItemClick(item.path)}
+                                                        className="w-full flex items-center gap-2 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-left"
+                                                    >
+                                                        <BookOpen size={14} className="text-primary" />
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-medium truncate">{item.title}</p>
+                                                            {item.description && (
+                                                                <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                                                            )}
+                                                        </div>
+                                                        <ExternalLink size={12} className="text-muted-foreground" />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Feature Unavailable */}
+                                        {msg.isFeatureUnavailable && msg.featureSuggestion && (
+                                            <div className="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200">
+                                                <p className="text-xs text-amber-700">{msg.featureSuggestion}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            ))}
+
+                            {/* Loading Indicator */}
+                            {isLoading && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="flex justify-start"
+                                >
+                                    <div className="bg-white border border-border rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+                                        <div className="flex gap-1">
+                                            <motion.div
+                                                animate={{ scale: [1, 1.2, 1] }}
+                                                transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
+                                                className="w-2 h-2 bg-muted-foreground/50 rounded-full"
                                             />
-                                            <SuggestionChip
-                                                text="Open calculus"
-                                                onClick={() => setInput("Open the calculus course")}
+                                            <motion.div
+                                                animate={{ scale: [1, 1.2, 1] }}
+                                                transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
+                                                className="w-2 h-2 bg-muted-foreground/50 rounded-full"
+                                            />
+                                            <motion.div
+                                                animate={{ scale: [1, 1.2, 1] }}
+                                                transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
+                                                className="w-2 h-2 bg-muted-foreground/50 rounded-full"
                                             />
                                         </div>
                                     </div>
-                                )}
-                                <div className="space-y-4">
-                                    {messages.map((m: Message) => (
-                                        <div
-                                            key={m.id}
-                                            className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                                        >
-                                            <div
-                                                className={`max-w-[90%] rounded-lg p-3 text-sm ${m.role === 'user'
-                                                    ? 'bg-[var(--worlded-blue)] text-white'
-                                                    : 'bg-muted text-foreground'
-                                                    }`}
-                                            >
-                                                <p className="whitespace-pre-wrap">{m.content}</p>
+                                </motion.div>
+                            )}
+                        </div>
 
-                                                {/* Display List */}
-                                                {m.displayList && (
-                                                    <div className="mt-3 border-t border-border/50 pt-3">
-                                                        <p className="text-xs font-medium text-muted-foreground mb-2">
-                                                            {m.displayList.listTitle}
-                                                        </p>
-                                                        <div className="space-y-2">
-                                                            {m.displayList.items.map((item, idx) => (
-                                                                <div
-                                                                    key={idx}
-                                                                    className={`flex items-center gap-2 p-2 rounded-md bg-background/50 ${item.path ? 'cursor-pointer hover:bg-background/80 transition-colors' : ''
-                                                                        }`}
-                                                                    onClick={() => item.path && handleListItemClick(item.path)}
-                                                                >
-                                                                    <BookOpen className="w-3.5 h-3.5 text-muted-foreground" />
-                                                                    <span className="flex-1 text-sm">{item.title}</span>
-                                                                    {item.path && (
-                                                                        <ExternalLink className="w-3 h-3 text-muted-foreground" />
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Feature Unavailable Indicator */}
-                                                {m.isFeatureUnavailable && (
-                                                    <div className="mt-2 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
-                                                        <FileText className="w-3 h-3" />
-                                                        <span>Coming soon</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {isLoading && (
-                                        <div className="flex justify-start">
-                                            <div className="bg-muted rounded-lg p-3 flex items-center gap-2">
-                                                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                                                <span className="text-xs text-muted-foreground">
-                                                    {loadingAction || 'Thinking...'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
+                        {/* Quick Actions */}
+                        {messages.length <= 1 && (
+                            <div className="px-4 py-2 border-t border-border bg-white">
+                                <p className="text-xs text-muted-foreground mb-2">Quick Actions:</p>
+                                <div className="flex gap-2 flex-wrap">
+                                    <button
+                                        onClick={() => setInput("Find a course")}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-primary/5 text-primary rounded-full text-xs font-medium hover:bg-primary/10 transition-colors"
+                                    >
+                                        <BookOpen size={14} />
+                                        Find a course
+                                    </button>
+                                    <button
+                                        onClick={() => setInput("Start a quiz")}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-primary/5 text-primary rounded-full text-xs font-medium hover:bg-primary/10 transition-colors"
+                                    >
+                                        <FileText size={14} />
+                                        Start a quiz
+                                    </button>
                                 </div>
                             </div>
-                        </ScrollArea>
+                        )}
 
-                        {/* Input Area */}
-                        <div className="p-3 border-t bg-background">
+                        {/* Input */}
+                        <div className="p-4 border-t border-border bg-white">
                             <form onSubmit={handleSubmit} className="flex gap-2">
-                                <Input
+                                <input
+                                    type="text"
                                     value={input}
                                     onChange={handleInputChange}
                                     placeholder="Ask Eddi anything..."
-                                    className="flex-1 focus-visible:ring-[var(--worlded-blue)]"
+                                    className="flex-1 px-4 py-2.5 bg-slate-50 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
                                     disabled={isLoading}
                                 />
-                                <Button
+                                <button
                                     type="submit"
-                                    size="icon"
-                                    className="bg-[var(--worlded-blue)] hover:bg-blue-900"
-                                    disabled={isLoading || !input.trim()}
+                                    disabled={!input.trim() || isLoading}
+                                    className="w-10 h-10 bg-gradient-to-r from-[var(--worlded-purple)] to-[var(--worlded-pink)] text-white rounded-full flex items-center justify-center hover:opacity-90 disabled:opacity-50 transition-opacity shadow-md"
                                 >
-                                    <Send className="w-4 h-4" />
-                                </Button>
+                                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                                </button>
                             </form>
                         </div>
                     </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Toggle Button */}
-            {!isOpen && (
-                <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setIsOpen(true)}
-                    className="h-14 w-14 rounded-full bg-[var(--worlded-blue)] text-white shadow-lg flex items-center justify-center hover:bg-blue-900 transition-colors"
-                >
-                    <MessageSquare className="w-7 h-7" />
-                </motion.button>
+                </>
             )}
-        </div>
+        </AnimatePresence>
     );
 }
 
@@ -416,7 +406,7 @@ function SuggestionChip({ text, onClick }: { text: string; onClick: () => void }
     return (
         <button
             onClick={onClick}
-            className="px-3 py-1.5 text-xs rounded-full bg-muted hover:bg-muted/80 transition-colors border"
+            className="px-3 py-1.5 text-xs rounded-full bg-[var(--worlded-purple)]/5 hover:bg-[var(--worlded-purple)]/10 text-[var(--worlded-purple)] transition-colors border border-[var(--worlded-purple)]/20"
         >
             {text}
         </button>
