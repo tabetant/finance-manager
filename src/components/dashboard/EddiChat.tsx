@@ -107,19 +107,26 @@ export function EddiChat({ isOpen, onClose }: EddiChatProps) {
 
             const data = await response.json();
 
-            if (data.actionPayload) {
-                handleAction(data.actionPayload, data.text);
+            // Debug logging
+            console.log('=== EDDI FRONTEND RESPONSE ===', JSON.stringify(data, null, 2));
+
+            // API returns "action" not "actionPayload"
+            const actionPayload = data.action || data.actionPayload;
+
+            if (actionPayload) {
+                console.log('Action payload found:', actionPayload);
+                handleAction(actionPayload, data.text);
             }
 
             const assistantMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
                 content: data.text,
-                displayList: data.actionPayload?.action === 'display_list'
-                    ? { listTitle: data.actionPayload.listTitle, items: data.actionPayload.items }
+                displayList: actionPayload?.action === 'display_list'
+                    ? { listTitle: actionPayload.listTitle, items: actionPayload.items }
                     : undefined,
-                isFeatureUnavailable: data.actionPayload?.action === 'feature_unavailable',
-                featureSuggestion: data.actionPayload?.suggestion,
+                isFeatureUnavailable: actionPayload?.action === 'feature_unavailable',
+                featureSuggestion: actionPayload?.suggestion,
             };
 
             setMessages(prev => [...prev, assistantMessage]);

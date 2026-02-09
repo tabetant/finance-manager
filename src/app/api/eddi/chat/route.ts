@@ -291,6 +291,28 @@ export async function POST(req: Request) {
         console.log("Eddi Steps:", result.steps.length);
         console.log("Eddi Response:", result.text?.substring(0, 100));
 
+        // Debug: Log ALL tool calls and results
+        if (result.steps?.length > 0) {
+            for (let i = 0; i < result.steps.length; i++) {
+                const step = result.steps[i];
+                console.log(`\n=== STEP ${i + 1} ===`);
+                if (step.toolCalls && Array.isArray(step.toolCalls)) {
+                    for (const tc of step.toolCalls) {
+                        console.log(`Tool Called: ${tc.toolName}`);
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        console.log(`Args:`, JSON.stringify((tc as any).args || tc).substring(0, 200));
+                    }
+                }
+                if (step.toolResults && Array.isArray(step.toolResults)) {
+                    for (const tr of step.toolResults) {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const output = (tr as any).result || (tr as any).output || tr;
+                        console.log(`Tool Result (${tr.toolName}):`, JSON.stringify(output).substring(0, 300));
+                    }
+                }
+            }
+        }
+
         // Extract action payload from tool results
         let actionPayload = null;
 
@@ -298,15 +320,19 @@ export async function POST(req: Request) {
             for (const step of result.steps) {
                 if (step.toolResults && Array.isArray(step.toolResults)) {
                     for (const toolResult of step.toolResults) {
-                        // Check for action-producing tools (AI SDK v6 uses 'output' not 'result')
-                        const output = toolResult.output as { action?: string } | undefined;
+                        // Check for action-producing tools (AI SDK uses 'result' or 'output')
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const output = ((toolResult as any).result || (toolResult as any).output) as { action?: string } | undefined;
                         if (output?.action) {
+                            console.log('Found action payload:', output);
                             actionPayload = output;
                         }
                     }
                 }
             }
         }
+
+        console.log('Final actionPayload being returned:', actionPayload);
 
         return NextResponse.json({
             text: result.text,
