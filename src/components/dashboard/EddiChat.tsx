@@ -1,48 +1,63 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, X, Send, Bot, AlertTriangle, Loader2 } from "lucide-react";
+import { MessageSquare, X, Send, Bot, Loader2, ExternalLink, BookOpen, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
-// Removed createClient as it's no longer used directly in this component
+import { useRouter, usePathname } from "next/navigation";
 
-// Define a flexible interface for tool parts since the specific types are complex
-interface ToolPart {
-    type: string;
-    toolName: string;
-    toolCallId: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    args: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    result?: any;
-    state?: string;
-}
+// ============================================================================
+// TYPES
+// ============================================================================
 
 interface Message {
     id: string;
     role: 'user' | 'assistant';
     content: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    parts?: any[];
+    displayList?: {
+        listTitle: string;
+        items: { title: string; path?: string; description?: string }[];
+    };
+    isFeatureUnavailable?: boolean;
+    featureSuggestion?: string;
 }
 
+interface ActionPayload {
+    action: 'navigate' | 'launch_quiz' | 'display_list' | 'draft_ticket' | 'feature_unavailable';
+    path?: string;
+    scrollToQuiz?: boolean;
+    listTitle?: string;
+    items?: { title: string; path?: string; description?: string }[];
+    feature?: string;
+    message?: string;
+    suggestion?: string;
+    ticket?: { subject: string; body: string; priority: string };
+}
 
+// ============================================================================
+// COMPONENT
+// ============================================================================
 
 export function EddiChat() {
     const [isOpen, setIsOpen] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [input, setInput] = useState('');
-    // Manual state management to replace useChat for non-streaming stability
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
     const router = useRouter();
+    const pathname = usePathname();
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Scroll to bottom when messages change
+    useEffect(() => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+    }, [messages]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInput(e.target.value);
@@ -58,17 +73,23 @@ export function EddiChat() {
             content: input,
         };
 
-        // Optimistic update
         setMessages(prev => [...prev, userMessage]);
         setInput('');
         setIsLoading(true);
+        setLoadingAction(null);
 
         try {
             const response = await fetch('/api/eddi/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    messages: [...messages, userMessage],
+                    messages: [...messages, userMessage].map(m => ({
+                        role: m.role,
+                        content: m.content,
+                    })),
+                    context: {
+                        currentPath: pathname,
+                    },
                 }),
             });
 
@@ -80,76 +101,143 @@ export function EddiChat() {
                 throw new Error(`API Error: ${response.statusText}`);
             }
 
-
             const data = await response.json();
+            console.log("Eddi Response:", data);
 
-            // Handle Action Agent payloads
+            // Handle different action types
             if (data.action) {
-                if (data.action.action === 'navigate') {
-                    const path = data.action.path;
-
-                    // Extract a readable name from path if possible, or use generic
-                    const destination = path.split('/').pop()?.replace(/-/g, ' ') || "destination";
-                    const formattedDestination = destination.charAt(0).toUpperCase() + destination.slice(1);
-
-                    // Add assistant message with specific feedback
-                    const assistantMessage: Message = {
-                        id: (Date.now() + 1).toString(),
-                        role: 'assistant',
-                        content: data.text || `Opening ${formattedDestination}...`,
-                    };
-                    setMessages(prev => [...prev, assistantMessage]);
-
-                    // Delay slightly to let the message appear
-                    setTimeout(() => {
-                        router.push(path);
-                    }, 800);
-                    return; // Stop here and don't add another message
-                }
-
-                if (data.action.action === 'draft_ticket') {
-                    // Placeholder for ticket confirmation
-                    const assistantMessage: Message = {
-                        id: (Date.now() + 1).toString(),
-                        role: 'assistant',
-                        content: data.text || "I've drafted a ticket for you (Draft UI coming soon).",
-                    };
-                    setMessages(prev => [...prev, assistantMessage]);
-                    return;
-                }
+                handleAction(data.action as ActionPayload, data.text);
+                return;
             }
 
-            // Create assistant message from standardized 'text' response
+            // Regular text response
             const assistantMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
                 content: data.text || "",
             };
-
             setMessages(prev => [...prev, assistantMessage]);
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Chat Error:", error);
             const errorMessage: Message = {
                 id: Date.now().toString(),
                 role: 'assistant',
-                content: error.message || "Something went wrong. Please try again.",
+                content: (error as Error).message || "Something went wrong. Please try again.",
             };
             setMessages(prev => [...prev, errorMessage]);
         } finally {
             setIsLoading(false);
+            setLoadingAction(null);
         }
     };
 
-
-
-    // Scroll to bottom when messages change
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    const handleAction = (action: ActionPayload, textResponse: string) => {
+        switch (action.action) {
+            case 'navigate':
+                handleNavigate(action.path!, textResponse);
+                break;
+            case 'launch_quiz':
+                handleQuizLaunch(action.path!, textResponse, action.scrollToQuiz);
+                break;
+            case 'display_list':
+                handleDisplayList(action.listTitle!, action.items!, textResponse);
+                break;
+            case 'draft_ticket':
+                handleDraftTicket(action.ticket!, textResponse);
+                break;
+            case 'feature_unavailable':
+                handleFeatureUnavailable(action.message!, action.suggestion, textResponse);
+                break;
+            default:
+                // Fallback: just show the text
+                const message: Message = {
+                    id: (Date.now() + 1).toString(),
+                    role: 'assistant',
+                    content: textResponse,
+                };
+                setMessages(prev => [...prev, message]);
         }
-    }, [messages]);
+    };
 
+    const handleNavigate = (path: string, textResponse: string) => {
+        const destination = path.split('/').pop()?.replace(/-/g, ' ') || "destination";
+        const formattedDestination = destination.charAt(0).toUpperCase() + destination.slice(1);
+
+        const assistantMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: textResponse || `Opening ${formattedDestination}...`,
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+        setLoadingAction('Navigating...');
+
+        setTimeout(() => {
+            router.push(path);
+        }, 600);
+    };
+
+    const handleQuizLaunch = (path: string, textResponse: string, scrollToQuiz?: boolean) => {
+        const assistantMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: textResponse || "Starting the quiz...",
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+        setLoadingAction('Loading quiz...');
+
+        setTimeout(() => {
+            router.push(path);
+            // If scrollToQuiz is true, we'll scroll after navigation
+            if (scrollToQuiz) {
+                // Give time for the page to load, then scroll
+                setTimeout(() => {
+                    const quizSection = document.getElementById('quiz-section');
+                    if (quizSection) {
+                        quizSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }, 1000);
+            }
+        }, 600);
+    };
+
+    const handleDisplayList = (listTitle: string, items: { title: string; path?: string; description?: string }[], textResponse: string) => {
+        const assistantMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: textResponse,
+            displayList: { listTitle, items },
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+    };
+
+    const handleDraftTicket = (ticket: { subject: string; body: string; priority: string }, textResponse: string) => {
+        const assistantMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: textResponse || `I've drafted a ticket for you:\n\n**Subject:** ${ticket.subject}\n**Priority:** ${ticket.priority}\n\n${ticket.body}\n\n(Ticket submission coming soon!)`,
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+    };
+
+    const handleFeatureUnavailable = (message: string, suggestion?: string, textResponse?: string) => {
+        const assistantMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: textResponse || message,
+            isFeatureUnavailable: true,
+            featureSuggestion: suggestion,
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+    };
+
+    const handleListItemClick = (path: string) => {
+        router.push(path);
+    };
+
+    // ========================================================================
+    // RENDER
+    // ========================================================================
 
     return (
         <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end">
@@ -160,7 +248,7 @@ export function EddiChat() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
                         className={`mb-4 bg-background border rounded-lg shadow-xl overflow-hidden flex flex-col
-                            ${isExpanded ? 'w-[800px] h-[600px]' : 'w-[350px] h-[500px]'}
+                            ${isExpanded ? 'w-[800px] h-[600px]' : 'w-[380px] h-[520px]'}
                             transition-all duration-300 ease-in-out`}
                     >
                         {/* Header */}
@@ -170,12 +258,27 @@ export function EddiChat() {
                                     <Bot className="w-4 h-4 text-white" />
                                 </div>
                                 <span className="font-semibold text-sm">Eddi AI</span>
+                                {loadingAction && (
+                                    <span className="text-xs text-muted-foreground animate-pulse">
+                                        {loadingAction}
+                                    </span>
+                                )}
                             </div>
                             <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsExpanded(!isExpanded)}>
-                                    {isExpanded ? <span className="text-xs">Collapse</span> : <span className="text-xs">Expand</span>}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => setIsExpanded(!isExpanded)}
+                                >
+                                    {isExpanded ? 'Collapse' : 'Expand'}
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsOpen(false)}>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => setIsOpen(false)}
+                                >
                                     <X className="w-4 h-4" />
                                 </Button>
                             </div>
@@ -187,7 +290,20 @@ export function EddiChat() {
                                 {messages.length === 0 && (
                                     <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground mt-10">
                                         <Bot className="w-12 h-12 mb-4 text-[var(--worlded-blue)]/20" />
-                                        <p className="text-sm">Hi! I&apos;m Eddi. I can help you navigate courses or create support tickets.</p>
+                                        <p className="text-sm font-medium mb-2">Hi! I&apos;m Eddi, your learning assistant.</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            I can help you navigate courses, find content, and start quizzes.
+                                        </p>
+                                        <div className="mt-4 flex flex-wrap gap-2 justify-center">
+                                            <SuggestionChip
+                                                text="Show me all courses"
+                                                onClick={() => setInput("Show me all courses")}
+                                            />
+                                            <SuggestionChip
+                                                text="Open calculus"
+                                                onClick={() => setInput("Open the calculus course")}
+                                            />
+                                        </div>
                                     </div>
                                 )}
                                 <div className="space-y-4">
@@ -197,42 +313,55 @@ export function EddiChat() {
                                             className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                         >
                                             <div
-                                                className={`max-w-[85%] rounded-lg p-3 text-sm ${m.role === 'user'
+                                                className={`max-w-[90%] rounded-lg p-3 text-sm ${m.role === 'user'
                                                     ? 'bg-[var(--worlded-blue)] text-white'
                                                     : 'bg-muted text-foreground'
                                                     }`}
                                             >
-                                                {/* Render text parts */}
-                                                {m.parts ? (
-                                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                    m.parts.map((part: any, index: number) => {
-                                                        if (part.type === 'text') {
-                                                            return <p key={index} className="whitespace-pre-wrap">{part.text}</p>;
-                                                        }
-                                                        // Render Tool Call (if visible) or Results
-                                                        // For now simplified to just text or specific tool handling
+                                                <p className="whitespace-pre-wrap">{m.content}</p>
 
-                                                        // NOTE: In non-streaming generateText, tool calls might be in parts
-                                                        // But without tool execution on server (maxSteps), we see the call.
-                                                        // If we enable maxSteps, we see the RESULT.
-
-                                                        // For this refactor, we focus on TEXT.
-
-                                                        return null;
-                                                    })
-                                                ) : (
-                                                    <p className="whitespace-pre-wrap">{m.content}</p>
+                                                {/* Display List */}
+                                                {m.displayList && (
+                                                    <div className="mt-3 border-t border-border/50 pt-3">
+                                                        <p className="text-xs font-medium text-muted-foreground mb-2">
+                                                            {m.displayList.listTitle}
+                                                        </p>
+                                                        <div className="space-y-2">
+                                                            {m.displayList.items.map((item, idx) => (
+                                                                <div
+                                                                    key={idx}
+                                                                    className={`flex items-center gap-2 p-2 rounded-md bg-background/50 ${item.path ? 'cursor-pointer hover:bg-background/80 transition-colors' : ''
+                                                                        }`}
+                                                                    onClick={() => item.path && handleListItemClick(item.path)}
+                                                                >
+                                                                    <BookOpen className="w-3.5 h-3.5 text-muted-foreground" />
+                                                                    <span className="flex-1 text-sm">{item.title}</span>
+                                                                    {item.path && (
+                                                                        <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
                                                 )}
 
-                                                {/** Fallback for string content if parts map didn't output anything (e.g. pure text message with parts populated for safety) */}
-                                                {m.parts && m.parts.length === 0 && <p className="whitespace-pre-wrap">{m.content}</p>}
+                                                {/* Feature Unavailable Indicator */}
+                                                {m.isFeatureUnavailable && (
+                                                    <div className="mt-2 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+                                                        <FileText className="w-3 h-3" />
+                                                        <span>Coming soon</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
                                     {isLoading && (
                                         <div className="flex justify-start">
-                                            <div className="bg-muted rounded-lg p-3">
+                                            <div className="bg-muted rounded-lg p-3 flex items-center gap-2">
                                                 <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                                                <span className="text-xs text-muted-foreground">
+                                                    {loadingAction || 'Thinking...'}
+                                                </span>
                                             </div>
                                         </div>
                                     )}
@@ -246,7 +375,7 @@ export function EddiChat() {
                                 <Input
                                     value={input}
                                     onChange={handleInputChange}
-                                    placeholder="Ask Eddi..."
+                                    placeholder="Ask Eddi anything..."
                                     className="flex-1 focus-visible:ring-[var(--worlded-blue)]"
                                     disabled={isLoading}
                                 />
@@ -276,5 +405,20 @@ export function EddiChat() {
                 </motion.button>
             )}
         </div>
+    );
+}
+
+// ============================================================================
+// SUB-COMPONENTS
+// ============================================================================
+
+function SuggestionChip({ text, onClick }: { text: string; onClick: () => void }) {
+    return (
+        <button
+            onClick={onClick}
+            className="px-3 py-1.5 text-xs rounded-full bg-muted hover:bg-muted/80 transition-colors border"
+        >
+            {text}
+        </button>
     );
 }
