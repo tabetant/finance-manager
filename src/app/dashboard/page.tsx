@@ -31,6 +31,16 @@ interface StreakData {
     longestStreak: number;
 }
 
+interface CourseWithProgress {
+    id: string;
+    title: string;
+    description: string;
+    iconName: string;
+    moduleCount: number;
+    completedCount: number;
+    progress: number;
+}
+
 export default function DashboardPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
@@ -39,6 +49,7 @@ export default function DashboardPage() {
     const [inProgressCourses, setInProgressCourses] = useState<InProgressCourse[]>([]);
     const [streak, setStreak] = useState<StreakData>({ currentStreak: 0, longestStreak: 0 });
     const [isNewUser, setIsNewUser] = useState(false);
+    const [courseProgress, setCourseProgress] = useState<CourseWithProgress[]>([]);
     const [userRole, setUserRole] = useState<'student' | 'mentor'>('student');
 
     useEffect(() => {
@@ -65,6 +76,7 @@ export default function DashboardPage() {
                         setInProgressCourses(data.inProgressCourses || []);
                         setStreak(data.streak || { currentStreak: 0, longestStreak: 0 });
                         setIsNewUser(data.isNewUser || false);
+                        setCourseProgress(data.courseProgress || []);
                     }
                 } catch (e) {
                     console.error('Failed to fetch stats:', e);
@@ -98,6 +110,7 @@ export default function DashboardPage() {
                     inProgressCourses={inProgressCourses}
                     streak={streak}
                     isNewUser={isNewUser}
+                    courseProgress={courseProgress}
                 />
                 : <MentorDashboard />
             }

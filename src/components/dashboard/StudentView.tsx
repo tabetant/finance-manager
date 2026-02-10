@@ -40,12 +40,23 @@ interface StreakData {
     longestStreak: number;
 }
 
+interface CourseWithProgress {
+    id: string;
+    title: string;
+    description: string;
+    iconName: string;
+    moduleCount: number;
+    completedCount: number;
+    progress: number;
+}
+
 interface StudentViewProps {
     firstName?: string;
     stats?: UserStats | null;
     inProgressCourses?: InProgressCourse[];
     streak?: StreakData;
     isNewUser?: boolean;
+    courseProgress?: CourseWithProgress[];
 }
 
 export function StudentView({
@@ -54,6 +65,7 @@ export function StudentView({
     inProgressCourses = [],
     streak = { currentStreak: 0, longestStreak: 0 },
     isNewUser = false,
+    courseProgress = [],
 }: StudentViewProps) {
 
     const multimodalLibrary: MultimediaCard[] = [
@@ -260,7 +272,7 @@ export function StudentView({
                 </motion.div>
 
                 {/* Enrolled Courses */}
-                <LearningOrbit />
+                <LearningOrbit courseProgress={courseProgress} />
 
                 {/* Multimodal Library */}
                 <motion.div
