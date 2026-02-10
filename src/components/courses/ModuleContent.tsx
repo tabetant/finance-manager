@@ -17,6 +17,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ModuleCompletionToggle } from "./ModuleCompletionToggle";
+import { saveQuizScore } from "@/app/actions/quiz";
 
 type QuizQuestion = {
     question: string;
@@ -26,21 +28,25 @@ type QuizQuestion = {
 
 interface ModuleContentProps {
     courseId: string;
+    moduleId: string;
     moduleTitle: string;
     contentMarkdown: string;
     youtubeUrl?: string | null;
     textbookUrl?: string | null;
     quizzes: QuizQuestion[];
     videoUrl?: string | null;
+    initialCompleted?: boolean;
 }
 
 export default function ModuleContent({
     courseId,
+    moduleId,
     moduleTitle,
     contentMarkdown,
     youtubeUrl,
     textbookUrl,
-    quizzes
+    quizzes,
+    initialCompleted = false
 }: ModuleContentProps) {
     const [showQuiz, setShowQuiz] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -77,11 +83,16 @@ export default function ModuleContent({
                                 <ArrowLeft className="w-5 h-5" />
                             </Button>
                         </Link>
-                        <div>
+                        <div className="flex-1">
                             <h1 className="text-xl font-bold text-[var(--primary)] flex items-center gap-2">
                                 {moduleTitle}
                             </h1>
                         </div>
+                        <ModuleCompletionToggle
+                            moduleId={moduleId}
+                            courseId={courseId}
+                            initialCompleted={initialCompleted}
+                        />
                     </div>
                 </div>
 
@@ -106,7 +117,7 @@ export default function ModuleContent({
                                 </Button>
                             </div>
                         ) : (
-                            <QuizInterface quizzes={quizzes} />
+                            <QuizInterface quizzes={quizzes} moduleId={moduleId} courseId={courseId} />
                         )}
                     </div>
                 </ScrollArea>
@@ -203,7 +214,7 @@ export default function ModuleContent({
     );
 }
 
-function QuizInterface({ quizzes }: { quizzes: QuizQuestion[] }) {
+function QuizInterface({ quizzes, moduleId, courseId }: { quizzes: QuizQuestion[]; moduleId: string; courseId: string }) {
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [score, setScore] = useState(0);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -231,6 +242,9 @@ function QuizInterface({ quizzes }: { quizzes: QuizQuestion[] }) {
             setIsSubmitted(false);
         } else {
             setIsComplete(true);
+            // Save quiz score
+            const finalScore = selectedOption === question.correctAnswer ? score + 1 : score;
+            saveQuizScore(moduleId, courseId, finalScore, quizzes.length).catch(console.error);
         }
     };
 

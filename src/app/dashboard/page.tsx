@@ -6,19 +6,45 @@ import { StudentView } from '@/components/dashboard/StudentView';
 import { MentorDashboard } from '@/components/dashboard/MentorDashboard';
 import { Button } from '@/components/ui/button';
 
+interface UserStats {
+    coursesEnrolled: number;
+    modulesCompleted: number;
+    totalModules: number;
+    completionPercentage: number;
+}
+
 export default function DashboardPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
-    const [userRole, setUserRole] = useState<'student' | 'mentor'>('student'); // Default to student for now, fetch from DB later
+    const [firstName, setFirstName] = useState('there');
+    const [stats, setStats] = useState<UserStats | null>(null);
+    const [userRole, setUserRole] = useState<'student' | 'mentor'>('student');
 
     useEffect(() => {
         const checkLoggedin = async () => {
-            const { data: { session } } = await createClient().auth.getSession();
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
                 router.push('/auth');
             } else {
+                // Extract user's first name from metadata or email
+                const user = session.user;
+                const fullName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+                const nameFromMeta = fullName ? fullName.split(' ')[0] : '';
+                const nameFromEmail = user.email ? user.email.split('@')[0] : '';
+                setFirstName(nameFromMeta || nameFromEmail || 'there');
                 setLoading(false);
-                // TODO: Fetch user role from 'users' table
+
+                // Fetch user stats
+                try {
+                    const res = await fetch('/api/user/stats');
+                    if (res.ok) {
+                        const data = await res.json();
+                        setStats(data.stats);
+                    }
+                } catch (e) {
+                    console.error('Failed to fetch stats:', e);
+                }
             }
         };
         checkLoggedin();
@@ -41,7 +67,7 @@ export default function DashboardPage() {
                 </Button>
             </div>
 
-            {userRole === 'student' ? <StudentView /> : <MentorDashboard />}
+            {userRole === 'student' ? <StudentView firstName={firstName} stats={stats} /> : <MentorDashboard />}
         </div>
     );
 }

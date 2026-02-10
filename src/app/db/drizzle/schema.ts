@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, jsonb, boolean, pgEnum, integer } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, jsonb, boolean, pgEnum, integer, unique } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const userRoleEnum = pgEnum('user_role', ['student', 'mentor', 'admin']);
@@ -69,6 +69,21 @@ export const resources = pgTable('resources', {
     contentSummary: text('content_summary'),
     createdAt: timestamp('created_at').defaultNow(),
 });
+
+export const userProgress = pgTable('user_progress', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id').notNull(),
+    moduleId: uuid('module_id').references(() => modules.id, { onDelete: 'cascade' }).notNull(),
+    courseId: text('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+    completed: boolean('completed').default(false),
+    completedAt: timestamp('completed_at'),
+    startedAt: timestamp('started_at').defaultNow(),
+    quizScore: integer('quiz_score'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => [
+    unique('unique_user_module').on(table.userId, table.moduleId),
+]);
 
 export const conversations = pgTable('conversations', {
     id: uuid('id').primaryKey().defaultRandom(),
@@ -151,5 +166,16 @@ export const messagesRelations = relations(messages, ({ one }) => ({
     sender: one(users, {
         fields: [messages.senderId],
         references: [users.id],
+    }),
+}));
+
+export const userProgressRelations = relations(userProgress, ({ one }) => ({
+    module: one(modules, {
+        fields: [userProgress.moduleId],
+        references: [modules.id],
+    }),
+    course: one(courses, {
+        fields: [userProgress.courseId],
+        references: [courses.id],
     }),
 }));

@@ -24,7 +24,20 @@ interface ContinueCard {
     href: string;
 }
 
-export function StudentView() {
+interface UserStats {
+    coursesEnrolled: number;
+    modulesCompleted: number;
+    totalModules: number;
+    completionPercentage: number;
+}
+
+interface StudentViewProps {
+    firstName?: string;
+    stats?: UserStats | null;
+}
+
+export function StudentView({ firstName = 'there', stats }: StudentViewProps) {
+
     const continueModules: ContinueCard[] = [
         {
             id: "1",
@@ -96,7 +109,7 @@ export function StudentView() {
                         transition={{ duration: 0.5 }}
                     >
                         <h1 className="text-4xl font-bold text-foreground mb-2">
-                            Welcome back, <span className="text-[var(--primary)]">Alex!</span>
+                            Welcome back, <span className="text-[var(--primary)]">{firstName}!</span>
                         </h1>
                         <p className="text-[var(--text-muted)] text-lg">
                             Continue your learning journey and achieve your goals.
@@ -118,7 +131,7 @@ export function StudentView() {
                         <div className="flex items-start justify-between mb-4">
                             <div>
                                 <p className="text-sm text-[var(--text-muted)] mb-1">Courses Enrolled</p>
-                                <p className="text-4xl font-bold text-foreground">3</p>
+                                <p className="text-4xl font-bold text-foreground">{stats?.coursesEnrolled ?? '—'}</p>
                             </div>
                             <div className="p-3 bg-[var(--primary)]/10 rounded-xl">
                                 <BookOpen className="w-6 h-6 text-[var(--primary)]" />
@@ -136,7 +149,7 @@ export function StudentView() {
                         <div className="flex items-start justify-between mb-2">
                             <div>
                                 <p className="text-sm text-[var(--text-muted)] mb-1">Modules Completed</p>
-                                <p className="text-4xl font-bold text-foreground">32<span className="text-xl text-[var(--text-muted)]">/74</span></p>
+                                <p className="text-4xl font-bold text-foreground">{stats?.modulesCompleted ?? 0}<span className="text-xl text-[var(--text-muted)]">/{stats?.totalModules ?? 0}</span></p>
                             </div>
                             <div className="relative w-16 h-16">
                                 <svg className="w-16 h-16 transform -rotate-90">
@@ -156,11 +169,11 @@ export function StudentView() {
                                         strokeWidth="6"
                                         fill="none"
                                         strokeLinecap="round"
-                                        strokeDasharray={`${45 * 1.76} 176`}
+                                        strokeDasharray={`${(stats?.completionPercentage ?? 0) * 1.76} 176`}
                                     />
                                 </svg>
                                 <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-[var(--primary)]">
-                                    45%
+                                    {stats?.completionPercentage ?? 0}%
                                 </span>
                             </div>
                         </div>
