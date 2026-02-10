@@ -3,10 +3,10 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Globe, Bell, User, Search, Sparkles, Menu, X } from 'lucide-react';
+import { Globe, Bell, User, Sparkles, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { EddiChat } from '@/components/dashboard/EddiChat';
+import { SearchBar } from '@/components/layout/SearchBar';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface AppShellProps {
@@ -79,13 +79,7 @@ export function AppShell({ children }: AppShellProps) {
 
                         {/* Search Bar - Desktop only */}
                         <div className="hidden lg:block w-80">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
-                                <Input
-                                    placeholder="Search courses, modules, topics..."
-                                    className="pl-10 text-sm bg-[var(--input-background)] border-border rounded-lg"
-                                />
-                            </div>
+                            <SearchBar />
                         </div>
 
                         {/* Right Section */}
