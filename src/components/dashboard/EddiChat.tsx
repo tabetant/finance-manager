@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { X, Send, Bot, Loader2, ExternalLink, BookOpen, FileText, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, usePathname } from "next/navigation";
+import { safeRedirect } from "@/lib/security/redirect-validator";
 
 // ============================================================================
 // TYPES
@@ -150,7 +151,7 @@ export function EddiChat({ isOpen, onClose }: EddiChatProps) {
                 if (actionPayload.path) {
                     setLoadingAction(`Navigating to ${actionPayload.path}...`);
                     setTimeout(() => {
-                        router.push(actionPayload.path!);
+                        router.push(safeRedirect(actionPayload.path!));
                         onClose();
                     }, 500);
                 }
@@ -180,7 +181,7 @@ export function EddiChat({ isOpen, onClose }: EddiChatProps) {
 
     const handleListItemClick = (path?: string) => {
         if (path) {
-            router.push(path);
+            router.push(safeRedirect(path));
             onClose();
         }
     };
