@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { db } from '@/db'
 import { userProgress } from '@/app/db/drizzle/schema'
 import { eq, and } from 'drizzle-orm'
+import { updateStreakOnQuizCompletion } from '@/lib/progress/streak-tracker'
 
 export async function saveQuizScore(
     moduleId: string,
@@ -53,5 +54,8 @@ export async function saveQuizScore(
         })
     }
 
-    return { success: true, score: percentageScore }
+    // Update streak on quiz completion
+    const streakData = await updateStreakOnQuizCompletion(userId)
+
+    return { success: true, score: percentageScore, streak: streakData }
 }

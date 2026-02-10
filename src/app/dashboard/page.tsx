@@ -13,11 +13,32 @@ interface UserStats {
     completionPercentage: number;
 }
 
+interface InProgressCourse {
+    courseId: string;
+    courseName: string;
+    totalModules: number;
+    completedModules: number;
+    percentage: number;
+    timeRemaining: string;
+    lastModule?: {
+        id: string;
+        title: string;
+    };
+}
+
+interface StreakData {
+    currentStreak: number;
+    longestStreak: number;
+}
+
 export default function DashboardPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [firstName, setFirstName] = useState('there');
     const [stats, setStats] = useState<UserStats | null>(null);
+    const [inProgressCourses, setInProgressCourses] = useState<InProgressCourse[]>([]);
+    const [streak, setStreak] = useState<StreakData>({ currentStreak: 0, longestStreak: 0 });
+    const [isNewUser, setIsNewUser] = useState(false);
     const [userRole, setUserRole] = useState<'student' | 'mentor'>('student');
 
     useEffect(() => {
@@ -41,6 +62,9 @@ export default function DashboardPage() {
                     if (res.ok) {
                         const data = await res.json();
                         setStats(data.stats);
+                        setInProgressCourses(data.inProgressCourses || []);
+                        setStreak(data.streak || { currentStreak: 0, longestStreak: 0 });
+                        setIsNewUser(data.isNewUser || false);
                     }
                 } catch (e) {
                     console.error('Failed to fetch stats:', e);
@@ -67,8 +91,16 @@ export default function DashboardPage() {
                 </Button>
             </div>
 
-            {userRole === 'student' ? <StudentView firstName={firstName} stats={stats} /> : <MentorDashboard />}
+            {userRole === 'student'
+                ? <StudentView
+                    firstName={firstName}
+                    stats={stats}
+                    inProgressCourses={inProgressCourses}
+                    streak={streak}
+                    isNewUser={isNewUser}
+                />
+                : <MentorDashboard />
+            }
         </div>
     );
 }
-

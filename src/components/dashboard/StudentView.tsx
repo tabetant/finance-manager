@@ -15,13 +15,17 @@ interface MultimediaCard {
     duration?: string;
 }
 
-interface ContinueCard {
-    id: string;
-    courseTitle: string;
-    moduleTitle: string;
-    progress: number;
-    timeLeft: string;
-    href: string;
+interface InProgressCourse {
+    courseId: string;
+    courseName: string;
+    totalModules: number;
+    completedModules: number;
+    percentage: number;
+    timeRemaining: string;
+    lastModule?: {
+        id: string;
+        title: string;
+    };
 }
 
 interface UserStats {
@@ -31,39 +35,26 @@ interface UserStats {
     completionPercentage: number;
 }
 
+interface StreakData {
+    currentStreak: number;
+    longestStreak: number;
+}
+
 interface StudentViewProps {
     firstName?: string;
     stats?: UserStats | null;
+    inProgressCourses?: InProgressCourse[];
+    streak?: StreakData;
+    isNewUser?: boolean;
 }
 
-export function StudentView({ firstName = 'there', stats }: StudentViewProps) {
-
-    const continueModules: ContinueCard[] = [
-        {
-            id: "1",
-            courseTitle: "Calculus I",
-            moduleTitle: "Integration Techniques",
-            progress: 65,
-            timeLeft: "15 min left",
-            href: "/courses/calculus/integration"
-        },
-        {
-            id: "2",
-            courseTitle: "Linear Algebra",
-            moduleTitle: "Matrix Operations",
-            progress: 42,
-            timeLeft: "23 min left",
-            href: "/courses/linear-algebra/matrix-algebra"
-        },
-        {
-            id: "3",
-            courseTitle: "Quantum Mechanics",
-            moduleTitle: "Wave Functions",
-            progress: 18,
-            timeLeft: "8 min left",
-            href: "/courses/quantum-mechanics/wave-functions"
-        }
-    ];
+export function StudentView({
+    firstName = 'there',
+    stats,
+    inProgressCourses = [],
+    streak = { currentStreak: 0, longestStreak: 0 },
+    isNewUser = false,
+}: StudentViewProps) {
 
     const multimodalLibrary: MultimediaCard[] = [
         {
@@ -109,7 +100,7 @@ export function StudentView({ firstName = 'there', stats }: StudentViewProps) {
                         transition={{ duration: 0.5 }}
                     >
                         <h1 className="text-4xl font-bold text-foreground mb-2">
-                            Welcome back, <span className="text-[var(--primary)]">{firstName}!</span>
+                            {isNewUser ? 'Welcome' : 'Welcome back'}, <span className="text-[var(--primary)]">{firstName}!</span>
                         </h1>
                         <p className="text-[var(--text-muted)] text-lg">
                             Continue your learning journey and achieve your goals.
@@ -189,7 +180,7 @@ export function StudentView({ firstName = 'there', stats }: StudentViewProps) {
                         <div className="flex items-start justify-between mb-4">
                             <div>
                                 <p className="text-sm text-[var(--text-muted)] mb-1">Current Streak</p>
-                                <p className="text-4xl font-bold text-foreground">12 <span className="text-xl font-normal text-[var(--text-muted)]">days</span></p>
+                                <p className="text-4xl font-bold text-foreground">{streak.currentStreak} <span className="text-xl font-normal text-[var(--text-muted)]">{streak.currentStreak === 1 ? 'day' : 'days'}</span></p>
                             </div>
                             <div className="p-3 bg-amber-100 rounded-xl">
                                 <Flame className="w-6 h-6 text-amber-500" />
@@ -225,33 +216,46 @@ export function StudentView({ firstName = 'there', stats }: StudentViewProps) {
                 >
                     <h2 className="text-2xl font-bold text-foreground mb-4">Pick up where you left off</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {continueModules.map((module, index) => (
-                            <Link key={module.id} href={module.href}>
-                                <motion.div
-                                    className="bg-white rounded-2xl p-5 border border-[var(--border-subtle)] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group"
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.3, delay: 0.35 + index * 0.05 }}
-                                >
-                                    <p className="text-sm text-[var(--text-muted)] mb-1">{module.courseTitle}</p>
-                                    <h3 className="text-lg font-semibold text-foreground mb-3 group-hover:text-[var(--primary)] transition-colors">
-                                        {module.moduleTitle}
-                                    </h3>
-                                    <div className="mb-3">
-                                        <Progress value={module.progress} className="h-2 bg-[var(--border-subtle)]" />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
-                                            {module.timeLeft}
-                                        </span>
-                                        <button className="px-4 py-1.5 bg-[var(--primary)] text-white text-sm font-medium rounded-full hover:bg-[var(--primary-hover)] transition-colors">
-                                            Continue
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            </Link>
-                        ))}
+                        {inProgressCourses.length > 0 ? inProgressCourses.map((course, index) => {
+                            const moduleSlug = course.lastModule
+                                ? course.lastModule.title.toLowerCase().replace(/\s+/g, '-')
+                                : '';
+                            const continueUrl = course.lastModule
+                                ? `/courses/${course.courseId}/${moduleSlug}`
+                                : `/courses/${course.courseId}`;
+
+                            return (
+                                <Link key={course.courseId} href={continueUrl}>
+                                    <motion.div
+                                        className="bg-white rounded-2xl p-5 border border-[var(--border-subtle)] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: 0.35 + index * 0.05 }}
+                                    >
+                                        <p className="text-sm text-[var(--text-muted)] mb-1">{course.courseName}</p>
+                                        <h3 className="text-lg font-semibold text-foreground mb-3 group-hover:text-[var(--primary)] transition-colors">
+                                            {course.lastModule?.title || 'Start Course'}
+                                        </h3>
+                                        <div className="mb-3">
+                                            <Progress value={course.percentage} className="h-2 bg-[var(--border-subtle)]" />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+                                                <Clock className="w-3 h-3" />
+                                                {course.timeRemaining}
+                                            </span>
+                                            <button className="px-4 py-1.5 bg-[var(--primary)] text-white text-sm font-medium rounded-full hover:bg-[var(--primary-hover)] transition-colors">
+                                                Continue
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                </Link>
+                            );
+                        }) : (
+                            <div className="col-span-3 text-center py-8 text-[var(--text-muted)]">
+                                <p>No courses in progress yet. Start a course to see your progress here!</p>
+                            </div>
+                        )}
                     </div>
                 </motion.div>
 

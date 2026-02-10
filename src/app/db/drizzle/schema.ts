@@ -85,6 +85,15 @@ export const userProgress = pgTable('user_progress', {
     unique('unique_user_module').on(table.userId, table.moduleId),
 ]);
 
+export const userStreaks = pgTable('user_streaks', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id').notNull().unique(),
+    currentStreak: integer('current_streak').default(0),
+    longestStreak: integer('longest_streak').default(0),
+    lastQuizDate: timestamp('last_quiz_date'),
+    updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 export const conversations = pgTable('conversations', {
     id: uuid('id').primaryKey().defaultRandom(),
     ticketId: uuid('ticket_id').references(() => tickets.id),
